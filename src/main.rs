@@ -88,6 +88,10 @@ fn main() -> CryptoResult<()> {
     let ephemeral_private = ec::generate_key()?;
     let ephemeral_public = ec::public_key(&ephemeral_private)?;
 
+    let ephemeral_private_pem = ec::export_private_key(&ephemeral_private)?;
+    let ephemeral_public_pem = ec::export_public_key(&ephemeral_public)?;
+    println!("Ephemeral key exports:\n{ephemeral_public_pem}{ephemeral_private_pem}");
+
     let secret_code_point = ec::ecdh(&primary_private, &ephemeral_public)?;
     println!("calculated secret: {secret_code_point:?}");
 
