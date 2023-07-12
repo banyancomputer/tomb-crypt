@@ -83,17 +83,17 @@ fn main() -> CryptoResult<()> {
 
     let primary_private_pem = ec::export_private_key(&primary_private)?;
     let primary_public_pem = ec::export_public_key(&primary_public)?;
-    println!("Primary key exports:\n{primary_public_pem}{primary_private_pem}");
+    println!("Alice's Keys:\n{primary_private_pem}{primary_public_pem}");
 
     let ephemeral_private = ec::generate_key()?;
     let ephemeral_public = ec::public_key(&ephemeral_private)?;
 
     let ephemeral_private_pem = ec::export_private_key(&ephemeral_private)?;
     let ephemeral_public_pem = ec::export_public_key(&ephemeral_public)?;
-    println!("Ephemeral key exports:\n{ephemeral_public_pem}{ephemeral_private_pem}");
+    println!("Bob's Keys:\n{ephemeral_private_pem}{ephemeral_public_pem}");
 
     let secret_code_point = ec::ecdh(&primary_private, &ephemeral_public)?;
-    println!("calculated secret: {secret_code_point:?}");
+    println!("Raw ECDH Bytes:\n{}", base64::encode(&secret_code_point));
 
     Ok(())
 }

@@ -62,7 +62,7 @@
         }
 
         function pemUnformat(data) {
-          let allBase64Chunks = data.split("\n");
+          let allBase64Chunks = data.trim().split("\n");
           let relevantBase64Chunks = allBase64Chunks.slice(1, allBase64Chunks.length - 1);
           return relevantBase64Chunks.join('');
         }
