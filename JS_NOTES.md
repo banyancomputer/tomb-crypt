@@ -17,6 +17,7 @@ var real_exported_public_key = await window.crypto.subtle.exportKey(
 );
 
 console.log('Exported Target Private Key: ' + btoa(new Uint8Array(real_exported_private_key)));
+
 // NDgsMTI5LDE4MiwyLDEsMCw0OCwxNiw2LDcsNDIsMTM0LDcyLDIwNiw2MSwyLDEsNiw1LDQzLDEyOSw0LDAsMzQsNCwxM
 // jksMTU4LDQ4LDEyOSwxNTUsMiwxLDEsNCw0OCw0NCwxMDgsODgsMjExLDksMTQ3LDE0OCwxMTIsMTY4LDUwLDgwLDEzMy
 // wyMzcsMTEyLDIyNCwxNTgsMzYsNTUsMTE5LDE5Niw0LDE5MiwyMzQsMjM0LDI3LDE2NiwxMTksMjUyLDEzMCw2MywxNDQ
@@ -29,6 +30,7 @@ console.log('Exported Target Private Key: ' + btoa(new Uint8Array(real_exported_
 // CwyMzIsMTg1
 
 console.log('Exported Target Public Key: ' + btoa(new Uint8Array(real_exported_public_key)));
+
 // NDgsMTE4LDQ4LDE2LDYsNyw0MiwxMzQsNzIsMjA2LDYxLDIsMSw2LDUsNDMsMTI5LDQsMCwzNCwzLDk4LDAsNCwyMjIsM
 // zUsMTM5LDI1Miw1OCwxOSwxMDMsMzEsNDgsMTY2LDIwOSwxNzgsMTc5LDE4OSwyMTEsMjU1LDI0OSwxMjUsMjAwLDcyLD
 // QsMTYsMjI2LDYwLDE4NiwyMTUsMjE3LDE2Niw4NSw1OCwxNDAsNiwyNDMsMTk4LDI0Miw2MywyMjcsMjM3LDE1OSw5MCw
@@ -54,6 +56,7 @@ var exported_temporal_key = await window.crypto.subtle.exportKey(
 );
 
 console.log('Exported Temporal Key: ' + btoa(new Uint8Array(exported_temporal_key)));
+
 // MjIzLDE2NCwxMjksMjM0LDE2MywxMTEsOTcsMjU0LDEzNiwyMDQsODgsMjcsNDUsMTAyLDQ3LDE5Nyw3NiwyLDIyMywxN
 // DksNzMsMjI4LDI0LDEyNCwxNjYsMTgyLDgyLDkzLDE4Myw2MiwyMjksMTU=
 ```
@@ -74,6 +77,7 @@ var ephemeral_exported_public_key = await window.crypto.subtle.exportKey(
 );
 
 console.log('Ephemeral Public Key: ' + btoa(new Uint8Array(ephemeral_exported_public_key)));
+
 // NDgsMTE4LDQ4LDE2LDYsNyw0MiwxMzQsNzIsMjA2LDYxLDIsMSw2LDUsNDMsMTI5LDQsMCwzNCwzLDk4LDAsNCw3NiwyN
 // ywxNjksMTUzLDIwMCwwLDcsMTg4LDc1LDE0NCwyMjEsMTM1LDEwNyw1MiwxNzcsMTk1LDYxLDE0OSw4NSwzMiwxOTQsMT
 // IsMTY2LDQzLDUzLDIxMSwxNDYsMTc4LDc1LDkzLDExNSwxNzUsMjM3LDg4LDE0Myw1MywyNCwyMzgsNTYsMjQsMTE4LDM
@@ -86,12 +90,10 @@ Use it along with the public key to derive a common shared key that can be used 
 temporal key.
 
 ```js
-var wrapping_key = await window.crypto.subtle.deriveKey(
+var wrapping_key = await window.crypto.subtle.deriveBits(
     { name: 'ECDH', public: real_key_pair.publicKey },
     ephemeral_key_pair.privateKey,
-    { name: 'AES-KW', length: 256 },
-    true,   // should be false in prod
-    ['wrapKey', 'unwrapKey'],
+    384,
 );
 
 var exported_wrapping_key = await window.crypto.subtle.exportKey(
@@ -118,12 +120,10 @@ get back to the wrapping key and in turn unwrap the key... It is presumed that t
 already has access to real_enc_key_pair.
 
 ```js
-let secretKey2 = await window.crypto.subtle.deriveKey(
+let secretKey2 = await window.crypto.subtle.deriveBits(
     { name: 'ECDH', public: eph_public_key },
     real_enc_key_pair,
-    { name: 'AES-KW', length: 256 },
-    true,   // should be false in prod
-    ['wrapKey', 'unwrapKey'],
+    null,
 );
 ```
 
