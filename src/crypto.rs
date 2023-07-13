@@ -69,17 +69,29 @@ impl EncryptedTemporalKey {
 
         TemporalKey(temporal_key_bytes)
     }
-}
 
-impl Display for EncryptedTemporalKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}.{}.{}",
+    pub fn export(&self) -> String {
+        vec![
             internal::base64_encode(&self.salt),
             internal::base64_encode(&self.data),
             internal::base64_encode(self.public_key_pem.as_ref())
-        )
+        ].join(".")
+    }
+
+    pub fn import(serialized: &str) -> Self {
+        let components: Vec<_> = serialized.split(".").collect();
+
+        let raw_salt = internal::base64_decode(components[0]);
+        let mut salt = [0u8; SALT_SIZE];
+        salt.copy_from_slice(raw_salt.as_ref());
+
+        let raw_data = internal::base64_decode(components[1]);
+        let mut data = [0u8; AES_KEY_SIZE + 8];
+        data.copy_from_slice(raw_data.as_ref());
+
+        let public_key_pem = internal::base64_decode(components[2]);
+
+        Self { salt, data, public_key_pem }
     }
 }
 

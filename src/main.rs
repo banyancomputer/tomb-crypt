@@ -13,8 +13,16 @@ fn main() {
     // `EcPublicEncryptionKey::import`.
     let encrypted_temporal_key = temporal_key.encrypt_for(&device_encryption_key.public_key());
 
-    // Decrypt
-    let decrypted_temporal_key = encrypted_temporal_key.decrypt_with(&device_encryption_key);
+    // This is the common intermediate format that should be stored/exchanged
+    let stored_temporal_key = encrypted_temporal_key.export();
+
+    println!("exchange encrypted temporal key: {stored_temporal_key}");
+
+    // Retrieve this from some common / intermediate storage
+    let loaded_temporal_key = EncryptedTemporalKey::import(&stored_temporal_key);
+
+    // Decrypt the loaded key format (this will still be encrypted)
+    let decrypted_temporal_key = loaded_temporal_key.decrypt_with(&device_encryption_key);
 
     // Extract the raw bytes for use elsewhere
     let mut raw_temporal_key = [0u8; 32];
