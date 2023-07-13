@@ -42,7 +42,7 @@ impl EcPublicEncryptionKey {
     }
 
     pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
-        todo!()
+        internal::fingerprint(&self.0)
     }
 
     pub fn import(pem_bytes: &[u8]) -> Self {

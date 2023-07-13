@@ -21,30 +21,6 @@ pub(crate) fn ecdh(encryptor: &PKey<Private>, decryptor: &PKey<Public>) -> Crypt
         .map_err(|err| format!("unable to calculate shared secret: {err:?}"))
 }
 
-pub(crate) fn fingerprint(public_key: &PKey<Public>) -> CryptoResult<String> {
-    let group = ec_group()?;
-    let mut big_num_ctx =
-        BigNumContext::new().map_err(|err| format!("unable to create big num context: {err:?}"))?;
-
-    let ec_key: EcKey<Public> = public_key
-        .ec_key()
-        .map_err(|err| format!("unable to get EC key from public key: {err:?}"))?;
-
-    let public_key_bytes = ec_key
-        .public_key()
-        .to_bytes(&group, PointConversionForm::COMPRESSED, &mut big_num_ctx)
-        .map_err(|err| format!("unable to extract public key bytes for fingerprint: {err:?}"))?;
-
-    let fingerprint_bytes = sha1(&public_key_bytes);
-    let fingerprint = fingerprint_bytes
-        .into_iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<Vec<String>>()
-        .join(":");
-
-    Ok(fingerprint)
-}
-
 pub(crate) fn generate_key() -> CryptoResult<PKey<Private>> {
     let group = ec_group()?;
 

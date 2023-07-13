@@ -70,4 +70,13 @@ fn main() {
     raw_temporal_key.copy_from_slice(decrypted_temporal_key.as_ref());
 
     assert_eq!(plaintext_temporal_key, &raw_temporal_key);
+
+    let friendly_fingerprint = device_encryption_key
+        .fingerprint()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<String>>()
+        .join(":");
+
+    println!("device fingerprint: {friendly_fingerprint}");
 }

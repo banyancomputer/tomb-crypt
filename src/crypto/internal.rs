@@ -9,7 +9,7 @@ fn ec_group() -> EcGroup {
     EcGroup::from_curve_name(Nid::SECP384R1).expect("selected EC group to remain valid")
 }
 
-pub(crate) fn fingerprint(public_key: PKey<Public>) -> [u8; FINGERPRINT_SIZE] {
+pub(crate) fn fingerprint(public_key: &PKey<Public>) -> [u8; FINGERPRINT_SIZE] {
     let ec_group = ec_group();
     let mut big_num_context = BigNumContext::new().expect("BigNumContext creation");
 
