@@ -32,7 +32,8 @@ impl EcEncryptionKey {
     }
 
     pub fn import(pem_bytes: &[u8]) -> Self {
-        todo!()
+        let raw_private = PKey::private_key_from_pkcs8(&pem_bytes).expect("parsing a valid pem private key");
+        Self(raw_private)
     }
 
     pub fn public_key(&self) -> EcPublicEncryptionKey {
@@ -55,7 +56,8 @@ impl EcPublicEncryptionKey {
     }
 
     pub fn import(pem_bytes: &[u8]) -> Self {
-        todo!()
+        let raw_public = PKey::public_key_from_pem(pem_bytes).expect("parsing a valid pem public key");
+        Self(raw_public)
     }
 }
 

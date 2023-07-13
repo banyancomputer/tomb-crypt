@@ -118,7 +118,7 @@ pub(crate) fn wrap_key(secret_bytes: &[u8], unprotected_key: &[u8]) -> [u8; AES_
     let wrapping_key = AesKey::new_encrypt(secret_bytes).expect("use of secret bytes when wrapping key");
 
     let mut enciphered_key = [0u8; AES_KEY_SIZE + 8];
-    aes::wrap_key(&wrapping_key, None, &mut enciphered_key, &unprotected_key).expect("wrapping to succeed");
+    aes::wrap_key(&wrapping_key, None, &mut enciphered_key, unprotected_key).expect("wrapping to succeed");
 
     enciphered_key
 }
