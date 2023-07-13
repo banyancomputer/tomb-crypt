@@ -1,10 +1,12 @@
 type CryptoResult<T> = Result<T, String>;
 
 mod ec {
+    use openssl::bn::BigNumContext;
     use openssl::derive::Deriver;
-    use openssl::ec::{EcGroup, EcKey};
+    use openssl::ec::{EcGroup, EcKey, PointConversionForm};
     use openssl::nid::Nid;
     use openssl::pkey::{PKey, Private, Public};
+    use openssl::sha::sha1;
 
     use crate::CryptoResult;
 
@@ -48,6 +50,32 @@ mod ec {
             .map_err(|err| format!("unable to convert pem bytes into a UTF8 string: {err:?}"))
     }
 
+    pub(crate) fn fingerprint(public_key: &PKey<Public>) -> CryptoResult<String> {
+        let group = ec_group()?;
+        let mut big_num_ctx = BigNumContext::new()
+            .map_err(|err| format!("unable to create big num context: {err:?}"))?;
+
+        let ec_key: EcKey<Public> = public_key
+            .ec_key()
+            .map_err(|err| format!("unable to get EC key from public key: {err:?}"))?;
+
+        let public_key_bytes = ec_key
+            .public_key()
+            .to_bytes(&group, PointConversionForm::COMPRESSED, &mut big_num_ctx)
+            .map_err(|err| {
+                format!("unable to extract public key bytes for fingerprint: {err:?}")
+            })?;
+
+        let fingerprint_bytes = sha1(&public_key_bytes);
+        let fingerprint = fingerprint_bytes
+            .into_iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<Vec<String>>()
+            .join(":");
+
+        Ok(fingerprint)
+    }
+
     pub(crate) fn generate_key() -> CryptoResult<PKey<Private>> {
         let group = ec_group()?;
 
@@ -83,17 +111,23 @@ fn main() -> CryptoResult<()> {
 
     let primary_private_pem = ec::export_private_key(&primary_private)?;
     let primary_public_pem = ec::export_public_key(&primary_public)?;
-    println!("Alice's Keys:\n{primary_private_pem}{primary_public_pem}");
+    println!(
+        "Alice's Keys (Fingerprint: {}):\n{primary_private_pem}{primary_public_pem}",
+        ec::fingerprint(&primary_public)?
+    );
 
     let ephemeral_private = ec::generate_key()?;
     let ephemeral_public = ec::public_key(&ephemeral_private)?;
 
     let ephemeral_private_pem = ec::export_private_key(&ephemeral_private)?;
     let ephemeral_public_pem = ec::export_public_key(&ephemeral_public)?;
-    println!("Bob's Keys:\n{ephemeral_private_pem}{ephemeral_public_pem}");
+    println!(
+        "Bob's Keys (Fingerprint: {}):\n{ephemeral_private_pem}{ephemeral_public_pem}",
+        ec::fingerprint(&ephemeral_public)?
+    );
 
     let secret_code_point = ec::ecdh(&primary_private, &ephemeral_public)?;
-    println!("Raw ECDH Bytes:\n{}", base64::encode(&secret_code_point));
+    println!("Raw ECDH Bytes: {}", base64::encode(&secret_code_point));
 
     Ok(())
 }

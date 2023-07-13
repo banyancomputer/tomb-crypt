@@ -11,15 +11,17 @@
         <h2>ECDH</h2>
         <section class="ecdh">
           <h2>Alice's Keys</h2>
-          <textarea class="private-key-alice" rows="7" cols="100"></textarea><br/>
-          <textarea class="public-key-alice" rows="6" cols="100"></textarea><br/>
+          <textarea class="private-key-alice" rows="7" cols="68"></textarea>
+          <textarea class="public-key-alice" rows="7" cols="68"></textarea><br/>
+          <div class="fingerprint-alice"></div>
 
           <h2>Bob's Keys</h2>
-          <textarea class="private-key-bob" rows="7" cols="100"></textarea>
-          <textarea class="public-key-bob" rows="6" cols="100"></textarea><br/>
+          <textarea class="private-key-bob" rows="7" cols="68"></textarea>
+          <textarea class="public-key-bob" rows="7" cols="68"></textarea><br/>
+          <div class="fingerprint-bob"></div>
 
           <h2>Raw ECDH Bytes</h2>
-          <textarea class="derived-bits" rows="2" cols="100"></textarea><br/>
+          <textarea class="derived-bits" rows="2" cols="68"></textarea><br/>
           <input class="derive-bits-button" type="button" value="Calculate ECDH Shared Group" /><br/>
         </section>
       </section>
@@ -43,7 +45,76 @@
           sharedSecretForm.value = btoa(String.fromCharCode(...new Uint8Array(derivedSecretBits)));
         }
 
-        function pemFormat(header, data) {
+        async function fingerprint(publicKey) {
+          const publicKeyData = await window.crypto.subtle.exportKey('raw', publicKey);
+          const publicKeyBytes = new Uint8Array(publicKeyData);
+
+          // Create compressed point
+          const compressedPoint = new Uint8Array(49);
+
+          let x = publicKeyBytes.slice(1, 49);
+          let y = publicKeyBytes.slice(49);
+
+          // first byte is 0x02 or 0x03 depending on the parity of the
+          // y-coordinate, followed by the x coordinate. We can't technically
+          // figure out whether the y-coodinate is odd without doing big number
+          // arithmetic, but this is a fair approximation.
+          compressedPoint[0] = (y[y.length - 1] % 2) === 0 ? 0x02 : 0x03;
+          compressedPoint.set(x, 1);
+
+          const hash = await window.crypto.subtle.digest('SHA-1', compressedPoint);
+          const hashArray = Array.from(new Uint8Array(hash));
+          const fingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join(':');
+
+          return fingerprint;
+        }
+
+        async function generateKey() {
+          return await window.crypto.subtle.generateKey(
+            { name: 'ECDH', namedCurve: 'P-384' },
+            true,
+            ['deriveBits']
+          );
+        }
+
+        async function loadKey(privateKeyContents, publicKeyContents) {
+            const pkcs8ByteString = atob(pemUnwrap(privateKeyContents));
+            const privateKeyBytes = new Uint8Array([...pkcs8ByteString].map(char => char.charCodeAt(0)));
+            const privateKey = await window.crypto.subtle.importKey(
+              'pkcs8', privateKeyBytes.buffer, 'ECDH', true, ['deriveBits']
+            );
+
+            const spkiByteString = atob(pemUnwrap(publicKeyContents));
+            const publicKeyBytes = new Uint8Array([...spkiByteString].map(char => char.charCodeAt(0)));
+            const publicKey = await window.crypto.subtle.importKey(
+              'spki', publicKeyBytes.buffer, 'ECDH', true, ['deriveBits']
+            );
+
+            return { privateKey, publicKey };
+        }
+
+        async function generateOrReadKey(id) {
+          const privateKeyForm = document.querySelector(`.ecdh .private-key-${id}`);
+          const publicKeyForm = document.querySelector(`.ecdh .public-key-${id}`);
+
+          if (privateKeyForm.value === '' || publicKeyForm.value === '') {
+            const newKey = generateKey();
+
+            const pkcs8ByteString = await window.crypto.subtle.exportKey('pkcs8', newKey.privateKey);
+            const pkcs8Content = btoa(String.fromCharCode(...new Uint8Array(pkcs8ByteString)));
+            privateKeyForm.value = pemWrap('PRIVATE KEY', pkcs8Content);
+
+            const spkiByteString = await window.crypto.subtle.exportKey('spki', newKey.publicKey);
+            const spkiContent = btoa(String.fromCharCode(...new Uint8Array(spkiByteString)));
+            publicKeyForm.value = pemWrap('PUBLIC KEY', spkiContent);
+
+            return newKey;
+          } else {
+            return loadKey(privateKeyForm.value, publicKeyForm.value);
+          }
+        }
+
+        function pemWrap(header, data) {
           const chunkSize = 64;
 
           let base64Chunks = [];
@@ -61,48 +132,10 @@
           return base64Chunks.join("\n");
         }
 
-        function pemUnformat(data) {
+        function pemUnwrap(data) {
           let allBase64Chunks = data.trim().split("\n");
           let relevantBase64Chunks = allBase64Chunks.slice(1, allBase64Chunks.length - 1);
           return relevantBase64Chunks.join('');
-        }
-
-        async function generateOrReadKey(id) {
-          const privateKeyForm = document.querySelector(`.ecdh .private-key-${id}`);
-          const publicKeyForm = document.querySelector(`.ecdh .public-key-${id}`);
-
-          if (privateKeyForm.value === '' || publicKeyForm.value === '') {
-            const newKey = await window.crypto.subtle.generateKey(
-              { name: 'ECDH', namedCurve: 'P-384' },
-              true,
-              ['deriveBits']
-            );
-
-            const pkcs8ByteString = await window.crypto.subtle.exportKey('pkcs8', newKey.privateKey);
-            const pkcs8Content = btoa(String.fromCharCode(...new Uint8Array(pkcs8ByteString)));
-            privateKeyForm.value = pemFormat('PRIVATE KEY', pkcs8Content);
-
-            const spkiByteString = await window.crypto.subtle.exportKey('spki', newKey.publicKey);
-            const spkiContent = btoa(String.fromCharCode(...new Uint8Array(spkiByteString)));
-            publicKeyForm.value = pemFormat('PUBLIC KEY', spkiContent);
-
-            return newKey;
-          } else {
-
-            const pkcs8ByteString = atob(pemUnformat(privateKeyForm.value));
-            const privateKeyBytes = new Uint8Array([...pkcs8ByteString].map(char => char.charCodeAt(0)));
-            const privateKey = await window.crypto.subtle.importKey(
-              'pkcs8', privateKeyBytes.buffer, 'ECDH', true, ['deriveBits']
-            );
-
-            const spkiByteString = atob(pemUnformat(publicKeyForm.value));
-            const publicKeyBytes = new Uint8Array([...spkiByteString].map(char => char.charCodeAt(0)));
-            const publicKey = await window.crypto.subtle.importKey(
-              'spki', publicKeyBytes.buffer, 'ECDH', true, ['deriveBits']
-            );
-
-            return { privateKey, publicKey };
-          }
         }
 
         const generateAlicesKeyPair = generateOrReadKey('alice');
@@ -112,6 +145,18 @@
           .then(values => {
             const alicesKeyPair = values[0];
             const bobsKeyPair = values[1];
+
+            fingerprint(alicesKeyPair.publicKey)
+              .then(fp => {
+                const aliceFP = document.querySelector(".ecdh .fingerprint-alice");
+                aliceFP.textContent = fp;
+              });
+
+            fingerprint(bobsKeyPair.publicKey)
+              .then(fp => {
+                const bobFP = document.querySelector(".ecdh .fingerprint-bob");
+                bobFP.textContent = fp;
+              });
 
             const deriveBitsButton = document.querySelector(".ecdh .derive-bits-button");
             deriveBitsButton.addEventListener("click", () => {
