@@ -33,7 +33,7 @@
 
     <script>
       (() => {
-        async function deriveSharedSecret(privateKey, publicKey) {
+        async function deriveSharedSecret(privateKey, publicKey, rawSalt = null) {
           const derivedSecretBits = await window.crypto.subtle.deriveBits(
             { name: "ECDH", namedCurve: "P-384", public: publicKey },
             privateKey,
@@ -52,25 +52,31 @@
             'raw', derivedSecretBits, 'HKDF', true, ['deriveBits']
           );
 
-          const hkdf_in = new Uint8Array(8);
-          await window.crypto.getRandomValues(hkdf_in);
+          let salt;
+
+          if (rawSalt === null) {
+            salt = new Uint8Array(8);
+            await window.crypto.getRandomValues(salt);
+          } else {
+            salt = new Uint8Array([...atob(rawSalt)].map(char => char.charCodeAt(0)));
+          }
 
           const infoStr = "fixed-data-todo";
-          const infoBytes = new Uint8Array([...infoStr].map(char => char.charCodeAt(0)));
+          const info = new Uint8Array([...infoStr].map(char => char.charCodeAt(0)));
 
-          const hkdfEnhancedBits = await window.crypto.subtle.deriveBits(
-            { name: 'HKDF', hash: 'SHA-256', salt: hkdf_in, info: infoBytes },
+          const secret = await window.crypto.subtle.deriveBits(
+            { name: 'HKDF', hash: 'SHA-256', salt, info },
             derivedKeyData,
             256
           );
 
-          const hkdfSalt = btoa(String.fromCharCode(...hkdf_in));
-          const hkdfBits = btoa(String.fromCharCode(...new Uint8Array(hkdfEnhancedBits)));
+          const hkdfSalt = btoa(String.fromCharCode(...salt));
+          const hkdfBits = btoa(String.fromCharCode(...new Uint8Array(secret)));
 
           const hkdfBitField = document.querySelector('.ecdh .hkdf-bits');
           hkdfBitField.value = `${hkdfSalt}.${hkdfBits}`;
 
-          return [hkdf_in, hkdfEnhancedBits];
+          return { salt, secret };
         }
 
         async function fingerprint(publicKey) {
@@ -170,25 +176,21 @@
         const generateBobsKeyPair = generateOrReadKey('bob');
 
         Promise.all([generateAlicesKeyPair, generateBobsKeyPair])
-          .then(values => {
+          .then(async (values) => {
             const alicesKeyPair = values[0];
             const bobsKeyPair = values[1];
 
-            fingerprint(alicesKeyPair.publicKey)
-              .then(fp => {
-                const aliceFP = document.querySelector(".ecdh .fingerprint-alice");
-                aliceFP.textContent = fp;
-              });
+            const aliceFP = await fingerprint(alicesKeyPair.publicKey);
+            const aliceFPField = document.querySelector(".ecdh .fingerprint-alice");
+            aliceFPField.textContent = aliceFP;
 
-            fingerprint(bobsKeyPair.publicKey)
-              .then(fp => {
-                const bobFP = document.querySelector(".ecdh .fingerprint-bob");
-                bobFP.textContent = fp;
-              });
+            const bobFP = await fingerprint(bobsKeyPair.publicKey);
+            const bobFPField = document.querySelector(".ecdh .fingerprint-bob");
+            bobFPField.textContent = bobFP;
 
             const deriveBitsButton = document.querySelector(".ecdh .derive-bits-button");
             deriveBitsButton.addEventListener("click", () => {
-              deriveSharedSecret(alicesKeyPair.privateKey, bobsKeyPair.publicKey);
+              deriveSharedSecret(alicesKeyPair.privateKey, bobsKeyPair.publicKey, 'e18peCciELc=');
             });
           });
       })();
