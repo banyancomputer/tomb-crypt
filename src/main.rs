@@ -1,11 +1,16 @@
+use base64::Engine;
+use base64::engine::general_purpose::STANDARD as B64;
+
 type CryptoResult<T> = Result<T, String>;
 
 mod ec {
     use openssl::bn::BigNumContext;
     use openssl::derive::Deriver;
     use openssl::ec::{EcGroup, EcKey, PointConversionForm};
+    use openssl::hash::MessageDigest;
     use openssl::nid::Nid;
     use openssl::pkey::{PKey, Private, Public};
+    use openssl::rand;
     use openssl::sha::sha1;
 
     use crate::CryptoResult;
@@ -89,6 +94,20 @@ mod ec {
         Ok(private_key)
     }
 
+    pub(crate) fn hkdf(derived_bits: &[u8]) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
+        let mut salt: [u8; 8] = [0; 8];
+        rand::rand_bytes(&mut salt)
+            .map_err(|err| format!("unable to generate random IV: {err:?}"))?;
+
+        let info: &str = "fixed-data-todo";
+        let mut hkdf_keys: [u8; 32] = [0; 32];
+
+        openssl_hkdf::hkdf::hkdf(MessageDigest::sha256(), derived_bits, &salt, info.as_bytes(), &mut hkdf_keys)
+            .map_err(|err| format!("error calculating HKDF keys: {err:?}"))?;
+
+        Ok((salt.to_vec(), hkdf_keys.to_vec()))
+    }
+
     pub(crate) fn public_key(private_key: &PKey<Private>) -> CryptoResult<PKey<Public>> {
         let group = ec_group()?;
 
@@ -126,8 +145,11 @@ fn main() -> CryptoResult<()> {
         ec::fingerprint(&ephemeral_public)?
     );
 
-    let secret_code_point = ec::ecdh(&primary_private, &ephemeral_public)?;
-    println!("Raw ECDH Bytes: {}", base64::encode(&secret_code_point));
+    let ecdh_bytes = ec::ecdh(&primary_private, &ephemeral_public)?;
+    println!("Raw ECDH Bytes: {}", B64.encode(&ecdh_bytes));
+
+    let (salt, hkdf_bytes) = ec::hkdf(&ecdh_bytes)?;
+    println!("HKDF Enhanced Bits: {}.{}", B64.encode(&salt), B64.encode(&hkdf_bytes));
 
     Ok(())
 }

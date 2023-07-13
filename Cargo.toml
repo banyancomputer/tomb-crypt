@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 base64 = "0.21.2"
 openssl = { version = "^0.10", features = ["v110"] }
+openssl-hkdf = "0.2.0"

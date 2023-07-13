@@ -52,7 +52,7 @@
             'raw', derivedSecretBits, 'HKDF', true, ['deriveBits']
           );
 
-          const hkdf_in = new Uint8Array(32);
+          const hkdf_in = new Uint8Array(8);
           await window.crypto.getRandomValues(hkdf_in);
 
           const infoStr = "fixed-data-todo";
@@ -64,10 +64,13 @@
             256
           );
 
-          const hkdfBits = document.querySelector('.ecdh .hkdf-bits');
-          hkdfBits.value = btoa(String.fromCharCode(...new Uint8Array(hkdfEnhancedBits)));
+          const hkdfSalt = btoa(String.fromCharCode(...hkdf_in));
+          const hkdfBits = btoa(String.fromCharCode(...new Uint8Array(hkdfEnhancedBits)));
 
-          return hkdfEnhancedBits;
+          const hkdfBitField = document.querySelector('.ecdh .hkdf-bits');
+          hkdfBitField.value = `${hkdfSalt}.${hkdfBits}`;
+
+          return [hkdf_in, hkdfEnhancedBits];
         }
 
         async function fingerprint(publicKey) {
