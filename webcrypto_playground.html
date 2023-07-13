@@ -20,9 +20,13 @@
           <textarea class="public-key-bob" rows="7" cols="68"></textarea><br/>
           <div class="fingerprint-bob"></div>
 
+          <input class="derive-bits-button" type="button" value="Calculate ECDH Shared Group" /><br/>
+
           <h2>Raw ECDH Bytes</h2>
           <textarea class="derived-bits" rows="2" cols="68"></textarea><br/>
-          <input class="derive-bits-button" type="button" value="Calculate ECDH Shared Group" /><br/>
+
+          <h2>HKDF Enhanced Bytes</h2>
+          <textarea class="hkdf-bits" rows="2" cols="68"></textarea><br/>
         </section>
       </section>
     </main>
@@ -41,8 +45,29 @@
             384
           );
 
-          const sharedSecretForm = document.querySelector('.ecdh .derived-bits');
-          sharedSecretForm.value = btoa(String.fromCharCode(...new Uint8Array(derivedSecretBits)));
+          const derivedBits = document.querySelector('.ecdh .derived-bits');
+          derivedBits.value = btoa(String.fromCharCode(...new Uint8Array(derivedSecretBits)));
+
+          let derivedKeyData = await window.crypto.subtle.importKey(
+            'raw', derivedSecretBits, 'HKDF', true, ['deriveBits']
+          );
+
+          const hkdf_in = new Uint8Array(32);
+          await window.crypto.getRandomValues(hkdf_in);
+
+          const infoStr = "fixed-data-todo";
+          const infoBytes = new Uint8Array([...infoStr].map(char => char.charCodeAt(0)));
+
+          const hkdfEnhancedBits = await window.crypto.subtle.deriveBits(
+            { name: 'HKDF', hash: 'SHA-256', salt: hkdf_in, info: infoBytes },
+            derivedKeyData,
+            256
+          );
+
+          const hkdfBits = document.querySelector('.ecdh .hkdf-bits');
+          hkdfBits.value = btoa(String.fromCharCode(...new Uint8Array(hkdfEnhancedBits)));
+
+          return hkdfEnhancedBits;
         }
 
         async function fingerprint(publicKey) {
@@ -160,12 +185,9 @@
 
             const deriveBitsButton = document.querySelector(".ecdh .derive-bits-button");
             deriveBitsButton.addEventListener("click", () => {
-              // Alice then generates a secret using her private key and Bob's public key.
-              // Bob could generate the same secret using his private key and Alice's public key.
               deriveSharedSecret(alicesKeyPair.privateKey, bobsKeyPair.publicKey);
             });
           });
-
       })();
     </script>
   </body>
