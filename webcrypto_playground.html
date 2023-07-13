@@ -79,6 +79,16 @@
           return { salt, secret };
         }
 
+        async function wrapKey(secret, unprotectedKey) {
+          let wrappingKey = await window.crypto.subtle.importKey(
+            'raw', secret, { name: 'AES-KW' }, true, ['wrapKey']
+          );
+
+          return await window.crypto.subtle.wrapKey(
+            'raw', unprotectedKey, wrappingKey, { name: 'AES-KW' }
+          );
+        }
+
         async function fingerprint(publicKey) {
           const publicKeyData = await window.crypto.subtle.exportKey('raw', publicKey);
           const publicKeyBytes = new Uint8Array(publicKeyData);
@@ -189,8 +199,17 @@
             bobFPField.textContent = bobFP;
 
             const deriveBitsButton = document.querySelector(".ecdh .derive-bits-button");
-            deriveBitsButton.addEventListener("click", () => {
-              deriveSharedSecret(alicesKeyPair.privateKey, bobsKeyPair.publicKey, 'e18peCciELc=');
+            deriveBitsButton.addEventListener("click", async () => {
+              const { salt, secret } = await deriveSharedSecret(alicesKeyPair.privateKey, bobsKeyPair.publicKey, 'e18peCciELc=');
+
+              const temporalKeyBytes = new Uint8Array([...'demo-key-do-not-reuse-sample-key'].map(char => char.charCodeAt(0)))
+              const temporalKey = await window.crypto.subtle.importKey(
+                'raw', temporalKeyBytes.buffer, { name: 'AES-GCM' }, true, ['decrypt', 'encrypt']
+              );
+
+              const protectedTemporalKey = await wrapKey(secret, temporalKey);
+              const encodedTemporalkey = btoa(String.fromCharCode(...new Uint8Array(protectedTemporalKey)));
+              console.log(encodedTemporalkey);
             });
           });
       })();
