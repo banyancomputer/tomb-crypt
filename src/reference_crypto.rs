@@ -1,30 +1,3 @@
-use openssl::aes::{AesKey, unwrap_key, wrap_key};
-use openssl::hash::MessageDigest;
-
-pub(crate) fn hkdf(derived_bits: &[u8], raw_salt: Option<[u8; SALT_SIZE]>) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
-    let salt = match raw_salt {
-        Some(s) => s,
-        None => {
-            salt
-        }
-    };
-
-    // Note: this must be < 1024 chars and I should generate it base on other known data
-    let info: &str = "fixed-data-todo";
-    let mut hkdf_keys: [u8; 32] = [0; 32];
-
-    openssl_hkdf::hkdf::hkdf(
-        MessageDigest::sha256(),
-        derived_bits,
-        &salt,
-        info.as_bytes(),
-        &mut hkdf_keys,
-    )
-    .map_err(|err| format!("error calculating HKDF keys: {err:?}"))?;
-
-    Ok((salt.to_vec(), hkdf_keys.to_vec()))
-}
-
 pub(crate) fn public_key(private_key: &PKey<Private>) -> CryptoResult<PKey<Public>> {
     let group = ec_group()?;
 

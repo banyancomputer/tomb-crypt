@@ -1,9 +1,11 @@
 use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine;
 
+use openssl::aes::{self, AesKey};
 use openssl::bn::BigNumContext;
 use openssl::derive::Deriver;
 use openssl::ec::{EcGroup, EcKey, PointConversionForm};
+use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
@@ -79,7 +81,17 @@ pub(crate) fn hkdf(secret_bytes: &[u8], info: &str) -> ([u8; SALT_SIZE], [u8; AE
 }
 
 pub(crate) fn hkdf_with_salt(secret_bytes: &[u8], salt: &[u8], info: &str) -> [u8; AES_KEY_SIZE] {
-    todo!()
+    let mut expanded_key = [0; AES_KEY_SIZE];
+
+    openssl_hkdf::hkdf::hkdf(
+        MessageDigest::sha256(),
+        secret_bytes,
+        salt,
+        info.as_bytes(),
+        &mut expanded_key,
+    ).expect("hkdf operation to succeed");
+
+    expanded_key
 }
 
 pub(crate) fn public_from_private(private_key: &PKey<Private>) -> PKey<Public> {
@@ -94,9 +106,19 @@ pub(crate) fn public_from_private(private_key: &PKey<Private>) -> PKey<Public> {
 }
 
 pub(crate) fn unwrap_key(secret_bytes: &[u8], protected_key: &[u8]) -> [u8; AES_KEY_SIZE] {
-    todo!()
+    let wrapping_key = AesKey::new_decrypt(secret_bytes).expect("use of secret bytes when unwrapping key");
+
+    let mut plaintext_key = [0u8; AES_KEY_SIZE];
+    aes::unwrap_key(&wrapping_key, None, &mut plaintext_key, protected_key).expect("unwrapping to succeed");
+
+    plaintext_key
 }
 
 pub(crate) fn wrap_key(secret_bytes: &[u8], unprotected_key: &[u8]) -> [u8; AES_KEY_SIZE + 8] {
-    todo!()
+    let wrapping_key = AesKey::new_encrypt(secret_bytes).expect("use of secret bytes when wrapping key");
+
+    let mut enciphered_key = [0u8; AES_KEY_SIZE + 8];
+    aes::wrap_key(&wrapping_key, None, &mut enciphered_key, &unprotected_key).expect("wrapping to succeed");
+
+    enciphered_key
 }
