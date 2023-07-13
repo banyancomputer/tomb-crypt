@@ -1,3 +1,4 @@
+use openssl::aes::{AesKey, unwrap_key, wrap_key};
 use openssl::derive::Deriver;
 use openssl::hash::MessageDigest;
 use openssl::rand;
@@ -74,8 +75,6 @@ pub(crate) fn public_key(private_key: &PKey<Private>) -> CryptoResult<PKey<Publi
     PKey::from_ec_key(pub_ec)
         .map_err(|err| format!("unable to create public PKey from public EcKey: {err:?}"))
 }
-
-use openssl::aes::{AesKey, unwrap_key, wrap_key};
 
 pub(crate) fn our_wrap_key(secret: &[u8], unprotected_key: &[u8]) -> CryptoResult<Vec<u8>> {
     let wrapping_key = AesKey::new_encrypt(secret)

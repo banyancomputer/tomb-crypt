@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use openssl::pkey::{PKey, Private, Public};
 
 mod internal;
@@ -66,6 +68,18 @@ impl EncryptedTemporalKey {
         let temporal_key_bytes = internal::unwrap_key(&hkdf_shared_secret, self.data.as_ref());
 
         TemporalKey(temporal_key_bytes)
+    }
+}
+
+impl Display for EncryptedTemporalKey {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}.{}.{}",
+            internal::base64_encode(&self.salt),
+            internal::base64_encode(&self.data),
+            internal::base64_encode(self.public_key_pem.as_ref())
+        )
     }
 }
 

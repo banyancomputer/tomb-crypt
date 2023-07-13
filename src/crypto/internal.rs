@@ -1,3 +1,6 @@
+use base64::engine::general_purpose::STANDARD as B64;
+use base64::Engine;
+
 use openssl::bn::BigNumContext;
 use openssl::ec::{EcGroup, EcKey, PointConversionForm};
 use openssl::nid::Nid;
@@ -6,6 +9,14 @@ use openssl::pkey::{PKey, Private, Public};
 use crate::crypto::{AES_KEY_SIZE, FINGERPRINT_SIZE, SALT_SIZE};
 
 const ECDH_SECRET_BYTE_SIZE: usize = 48;
+
+pub(crate) fn base64_decode(data: &str) -> Vec<u8> {
+    B64.decode(data).expect("data to be valid base64")
+}
+
+pub(crate) fn base64_encode(data: &[u8]) -> String {
+    B64.encode(data)
+}
 
 fn ec_group() -> EcGroup {
     EcGroup::from_curve_name(Nid::SECP384R1).expect("selected EC group to remain valid")
