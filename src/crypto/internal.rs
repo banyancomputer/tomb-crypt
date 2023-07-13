@@ -62,16 +62,35 @@ pub(crate) fn generate_ec_key() -> PKey<Private> {
     ec_key.try_into().expect("EC private key to be convertible to private key type")
 }
 
-pub(crate) fn hkdf(secret_bytes: &[u8]) -> ([u8; SALT_SIZE], [u8; AES_KEY_SIZE]) {
-    todo!()
+pub(crate) fn generate_info(encryptor: &[u8], decryptor: &[u8]) -> String {
+    use crate::crypto::pretty_fingerprint;
+
+    format!(
+        "app=tomb,encryptor={},decryptor={}",
+        pretty_fingerprint(encryptor),
+        pretty_fingerprint(decryptor),
+    )
 }
 
-pub(crate) fn hkdf_with_salt(secret_bytes: &[u8], salt: &[u8]) -> [u8; AES_KEY_SIZE] {
+pub(crate) fn hkdf(secret_bytes: &[u8], info: &str) -> ([u8; SALT_SIZE], [u8; AES_KEY_SIZE]) {
+    let mut salt = [0u8; SALT_SIZE];
+    openssl::rand::rand_bytes(&mut salt).expect("unable to generate random IV");
+    (salt, hkdf_with_salt(secret_bytes, &salt, info))
+}
+
+pub(crate) fn hkdf_with_salt(secret_bytes: &[u8], salt: &[u8], info: &str) -> [u8; AES_KEY_SIZE] {
     todo!()
 }
 
 pub(crate) fn public_from_private(private_key: &PKey<Private>) -> PKey<Public> {
-    todo!()
+    let ec_group = ec_group();
+
+    let ec_key = private_key.ec_key().expect("unable to extract EC private key from private key");
+    // Have to do a weird little dance here as to we need to temporarily go into bytes to get to a
+    // public only key
+    let pub_ec_key: EcKey<Public> = EcKey::from_public_key(&ec_group, ec_key.public_key()).expect("unable to turn public key bytes into public key");
+
+    PKey::from_ec_key(pub_ec_key).expect("unable to wrap public key in common struct")
 }
 
 pub(crate) fn unwrap_key(secret_bytes: &[u8], protected_key: &[u8]) -> [u8; AES_KEY_SIZE] {

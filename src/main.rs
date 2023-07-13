@@ -31,13 +31,9 @@ fn main() {
     // Sanity check
     assert_eq!(plaintext_temporal_key, &raw_temporal_key);
 
-    // Calculate a fingerprint of the device encryption key (works on public key)
-    let friendly_fingerprint = device_encryption_key
-        .fingerprint()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect::<Vec<String>>()
-        .join(":");
+    // Calculate a fingerprint of the device encryption key (works on public or private keys)
+    let fingerprint = device_encryption_key.fingerprint();
+    let friendly_fingerprint = crypto_playground::pretty_fingerprint(&fingerprint);
 
     println!("device fingerprint: {friendly_fingerprint}");
 }

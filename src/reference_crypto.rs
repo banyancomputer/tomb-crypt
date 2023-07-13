@@ -5,8 +5,6 @@ pub(crate) fn hkdf(derived_bits: &[u8], raw_salt: Option<[u8; SALT_SIZE]>) -> Cr
     let salt = match raw_salt {
         Some(s) => s,
         None => {
-            let mut salt = [0u8; SALT_SIZE];
-            rand::rand_bytes(&mut salt).map_err(|err| format!("unable to generate random IV: {err:?}"))?;
             salt
         }
     };

@@ -1,5 +1,3 @@
-use std::fmt::{self, Display, Formatter};
-
 use openssl::pkey::{PKey, Private, Public};
 
 mod internal;
@@ -7,6 +5,14 @@ mod internal;
 const AES_KEY_SIZE: usize = 32;
 const FINGERPRINT_SIZE: usize = 20;
 const SALT_SIZE: usize = 16;
+
+pub fn pretty_fingerprint(fingerprint_bytes: &[u8]) -> String {
+    fingerprint_bytes
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<Vec<String>>()
+        .join(":")
+}
 
 pub struct EcEncryptionKey(PKey<Private>);
 
@@ -62,8 +68,14 @@ pub struct EncryptedTemporalKey {
 impl EncryptedTemporalKey {
     pub fn decrypt_with(&self, recipient_key: &EcEncryptionKey) -> TemporalKey {
         let ephemeral_public_key = EcPublicEncryptionKey::import(self.public_key_pem.as_ref());
+
         let ecdh_shared_secret = internal::ecdh_exchange(&recipient_key.0, &ephemeral_public_key.0);
-        let hkdf_shared_secret = internal::hkdf_with_salt(&ecdh_shared_secret, self.salt.as_ref());
+
+        let info = internal::generate_info(
+            ephemeral_public_key.fingerprint().as_ref(),
+            recipient_key.fingerprint().as_ref()
+        );
+        let hkdf_shared_secret = internal::hkdf_with_salt(&ecdh_shared_secret, self.salt.as_ref(), &info);
 
         let temporal_key_bytes = internal::unwrap_key(&hkdf_shared_secret, self.data.as_ref());
 
@@ -102,7 +114,13 @@ impl TemporalKey {
         let ephemeral_key = EcEncryptionKey::generate();
 
         let ecdh_shared_secret = internal::ecdh_exchange(&ephemeral_key.0, &recipient_key.0);
-        let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret);
+
+        let info = internal::generate_info(
+            recipient_key.fingerprint().as_ref(),
+            ephemeral_key.fingerprint().as_ref()
+        );
+        let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret, &info);
+
         let encrypted_key = internal::wrap_key(&hkdf_shared_secret, &self.0);
 
         let exported_ephemeral_key = ephemeral_key.public_key().export();
