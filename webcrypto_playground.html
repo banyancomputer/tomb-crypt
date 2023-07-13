@@ -125,8 +125,8 @@
           const privateKeyForm = document.querySelector(`.ecdh .private-key-${id}`);
           const publicKeyForm = document.querySelector(`.ecdh .public-key-${id}`);
 
-          if (privateKeyForm.value === '' || publicKeyForm.value === '') {
-            const newKey = generateKey();
+          if (privateKeyForm.value.trim() === '' || publicKeyForm.value.trim() === '') {
+            const newKey = await generateKey();
 
             const pkcs8ByteString = await window.crypto.subtle.exportKey('pkcs8', newKey.privateKey);
             const pkcs8Content = btoa(String.fromCharCode(...new Uint8Array(pkcs8ByteString)));
