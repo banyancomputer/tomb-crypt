@@ -3,6 +3,7 @@ use openssl::pkey::{PKey, Private, Public};
 mod internal;
 
 const AES_KEY_SIZE: usize = 32;
+const FINGERPRINT_SIZE: usize = 20;
 const SALT_SIZE: usize = 16;
 
 pub struct EcEncryptionKey(PKey<Private>);
@@ -13,7 +14,13 @@ impl EcEncryptionKey {
     }
 
     pub fn export(&self) -> Vec<u8> {
-        todo!()
+        self.0
+            .private_key_to_pem_pkcs8()
+            .expect("unable to export private key to pem")
+    }
+
+    pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
+        self.public_key().fingerprint()
     }
 
     pub fn generate() -> Self {
@@ -29,6 +36,12 @@ pub struct EcPublicEncryptionKey(PKey<Public>);
 
 impl EcPublicEncryptionKey {
     pub fn export(&self) -> Vec<u8> {
+        self.0
+            .public_key_to_pem()
+            .expect("unable to export public key to pem")
+    }
+
+    pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
         todo!()
     }
 

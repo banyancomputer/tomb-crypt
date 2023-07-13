@@ -1,9 +1,5 @@
-use openssl::bn::BigNumContext;
 use openssl::derive::Deriver;
-use openssl::ec::{EcGroup, EcKey, PointConversionForm};
 use openssl::hash::MessageDigest;
-use openssl::nid::Nid;
-use openssl::pkey::{PKey, Private, Public};
 use openssl::rand;
 use openssl::sha::sha1;
 
@@ -23,24 +19,6 @@ pub(crate) fn ecdh(encryptor: &PKey<Private>, decryptor: &PKey<Public>) -> Crypt
     deriver
         .derive_to_vec()
         .map_err(|err| format!("unable to calculate shared secret: {err:?}"))
-}
-
-pub(crate) fn export_private_key(private_key: &PKey<Private>) -> CryptoResult<String> {
-    let bytes = private_key
-        .private_key_to_pem_pkcs8()
-        .map_err(|err| format!("unable to export private key to pem: {err:?}"))?;
-
-    String::from_utf8(bytes)
-        .map_err(|err| format!("unable to convert pem bytes into a UTF8 string: {err:?}"))
-}
-
-pub(crate) fn export_public_key(public_key: &PKey<Public>) -> CryptoResult<String> {
-    let bytes = public_key
-        .public_key_to_pem()
-        .map_err(|err| format!("unable to export private key to pem: {err:?}"))?;
-
-    String::from_utf8(bytes)
-        .map_err(|err| format!("unable to convert pem bytes into a UTF8 string: {err:?}"))
 }
 
 pub(crate) fn fingerprint(public_key: &PKey<Public>) -> CryptoResult<String> {
