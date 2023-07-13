@@ -118,8 +118,8 @@ impl TemporalKey {
         let ecdh_shared_secret = internal::ecdh_exchange(&ephemeral_key.0, &recipient_key.0);
 
         let info = internal::generate_info(
-            recipient_key.fingerprint().as_ref(),
-            ephemeral_key.fingerprint().as_ref()
+            ephemeral_key.fingerprint().as_ref(),
+            recipient_key.fingerprint().as_ref()
         );
         let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret, &info);
 
