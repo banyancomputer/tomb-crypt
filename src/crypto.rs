@@ -9,10 +9,6 @@ const SALT_SIZE: usize = 16;
 pub struct EcEncryptionKey(PKey<Private>);
 
 impl EcEncryptionKey {
-    pub fn import(pem_bytes: &[u8]) -> Self {
-        todo!()
-    }
-
     pub fn export(&self) -> Vec<u8> {
         self.0
             .private_key_to_pem_pkcs8()
@@ -27,8 +23,13 @@ impl EcEncryptionKey {
         Self(internal::generate_ec_key())
     }
 
-    pub fn public_key(&self) -> EcPublicEncryptionKey {
+    pub fn import(pem_bytes: &[u8]) -> Self {
         todo!()
+    }
+
+    pub fn public_key(&self) -> EcPublicEncryptionKey {
+        let ec_public = internal::public_from_private(&self.0);
+        EcPublicEncryptionKey(ec_public)
     }
 }
 
@@ -51,14 +52,20 @@ impl EcPublicEncryptionKey {
 }
 
 pub struct EncryptedTemporalKey {
-    seed: [u8; SALT_SIZE],
     data: [u8; AES_KEY_SIZE + 8],
-    public_key_pem: String,
+    salt: [u8; SALT_SIZE],
+    public_key_pem: Vec<u8>,
 }
 
 impl EncryptedTemporalKey {
     pub fn decrypt_with(&self, recipient_key: &EcEncryptionKey) -> TemporalKey {
-        todo!()
+        let ephemeral_public_key = EcPublicEncryptionKey::import(self.public_key_pem.as_ref());
+        let ecdh_shared_secret = internal::ecdh_exchange(&recipient_key.0, &ephemeral_public_key.0);
+        let hkdf_shared_secret = internal::hkdf_with_salt(&ecdh_shared_secret, self.salt.as_ref());
+
+        let temporal_key_bytes = internal::unwrap_key(&hkdf_shared_secret, self.data.as_ref());
+
+        TemporalKey(temporal_key_bytes)
     }
 }
 
@@ -66,7 +73,19 @@ pub struct TemporalKey([u8; AES_KEY_SIZE]);
 
 impl TemporalKey {
     pub fn encrypt_for(&self, recipient_key: &EcPublicEncryptionKey) -> EncryptedTemporalKey {
-        todo!()
+        let ephemeral_key = EcEncryptionKey::generate();
+
+        let ecdh_shared_secret = internal::ecdh_exchange(&ephemeral_key.0, &recipient_key.0);
+        let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret);
+        let encrypted_key = internal::wrap_key(&hkdf_shared_secret, &self.0);
+
+        let exported_ephemeral_key = ephemeral_key.public_key().export();
+
+        EncryptedTemporalKey {
+            data: encrypted_key,
+            salt,
+            public_key_pem: exported_ephemeral_key,
+        }
     }
 
     #[cfg(test)]
