@@ -2,6 +2,7 @@ use base64::engine::general_purpose::STANDARD as B64;
 use base64::Engine;
 
 use openssl::bn::BigNumContext;
+use openssl::derive::Deriver;
 use openssl::ec::{EcGroup, EcKey, PointConversionForm};
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
@@ -26,7 +27,15 @@ pub(crate) fn ecdh_exchange(
     private: &PKey<Private>,
     public: &PKey<Public>,
 ) -> [u8; ECDH_SECRET_BYTE_SIZE] {
-    todo!()
+    let mut deriver = Deriver::new(private).expect("creation of ECDH derivation context from private key");
+    deriver.set_peer(public).expect("setting openssl peer for ECDH key derivation");
+
+    let calculated_bytes = deriver.derive_to_vec().expect("calculate common public key");
+
+    let mut key_slice = [0u8; ECDH_SECRET_BYTE_SIZE];
+    key_slice.copy_from_slice(&calculated_bytes);
+
+    key_slice
 }
 
 pub(crate) fn fingerprint(public_key: &PKey<Public>) -> [u8; FINGERPRINT_SIZE] {
@@ -49,8 +58,8 @@ pub(crate) fn fingerprint(public_key: &PKey<Public>) -> [u8; FINGERPRINT_SIZE] {
 
 pub(crate) fn generate_ec_key() -> PKey<Private> {
     let ec_group = ec_group();
-
-    todo!()
+    let ec_key = EcKey::generate(&ec_group).expect("EC key generation to succeed");
+    ec_key.try_into().expect("EC private key to be convertible to private key type")
 }
 
 pub(crate) fn hkdf(secret_bytes: &[u8]) -> ([u8; SALT_SIZE], [u8; AES_KEY_SIZE]) {

@@ -1,39 +1,5 @@
 use openssl::aes::{AesKey, unwrap_key, wrap_key};
-use openssl::derive::Deriver;
 use openssl::hash::MessageDigest;
-use openssl::rand;
-use openssl::sha::sha1;
-
-pub(crate) const SALT_SIZE: usize = 8;
-
-pub(crate) type CryptoResult<T> = Result<T, String>;
-
-pub(crate) fn ecdh(encryptor: &PKey<Private>, decryptor: &PKey<Public>) -> CryptoResult<Vec<u8>> {
-    let mut deriver = Deriver::new(encryptor).map_err(|err| {
-        format!("unable to initialize EC shared codepoint deriver from private key: {err:?}")
-    })?;
-
-    deriver
-        .set_peer(decryptor)
-        .map_err(|err| format!("unable to set peer as part of the exchange: {err:?}"))?;
-
-    deriver
-        .derive_to_vec()
-        .map_err(|err| format!("unable to calculate shared secret: {err:?}"))
-}
-
-pub(crate) fn generate_key() -> CryptoResult<PKey<Private>> {
-    let group = ec_group()?;
-
-    let ec_key =
-        EcKey::generate(&group).map_err(|err| format!("unable to generate EC key: {err:?}"))?;
-
-    let private_key: PKey<Private> = ec_key
-        .try_into()
-        .map_err(|err| format!("failed to convert EC key into PKey: {err:?}"))?;
-
-    Ok(private_key)
-}
 
 pub(crate) fn hkdf(derived_bits: &[u8], raw_salt: Option<[u8; SALT_SIZE]>) -> CryptoResult<(Vec<u8>, Vec<u8>)> {
     let salt = match raw_salt {
