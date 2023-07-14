@@ -5,7 +5,7 @@ use pyramidion::prelude::*;
 fn main() -> Result<(), KeySealError> {
     // This key is produced through normal WNFS operations
     let plaintext_temporal_key: &[u8; 32] = b"demo-key-do-not-reuse-sample-key";
-    let temporal_key = SymmetricKey::from(plaintext_temporal_key.clone());
+    let temporal_key = SymmetricKey::from(*plaintext_temporal_key);
 
     // Create a new EC encryption key intended to be used to encrypt/decrypt temporal keys
     let our_device_key = EcEncryptionKey::generate()?;
@@ -13,7 +13,10 @@ fn main() -> Result<(), KeySealError> {
     // Calculate a fingerprint of the device encryption key (works on public or private keys, will
     // produce the same response either way)
     let our_fingerprint = our_device_key.fingerprint()?;
-    println!("pretty printed version of our fingerprint: {}", pyramidion::pretty_fingerprint(&our_fingerprint));
+    println!(
+        "pretty printed version of our fingerprint: {}",
+        pyramidion::pretty_fingerprint(&our_fingerprint)
+    );
 
     // Just grab another public key for a fake other client, just to use as an example. We never
     // keep the private key ("this device doesn't have it").
@@ -43,10 +46,12 @@ fn main() -> Result<(), KeySealError> {
 
     // Retrieval of temporal key requires us to have our_device_key and the shared key database,
     // but nothing else.
-    let stored_temporal_key = shared_key_db.get(&our_fingerprint).expect("our key to still be present");
+    let stored_temporal_key = shared_key_db
+        .get(&our_fingerprint)
+        .expect("our key to still be present");
 
     // Retrieve this from some common / intermediate storage
-    let loaded_temporal_key = EncryptedSymmetricKey::import(&stored_temporal_key)?;
+    let loaded_temporal_key = EncryptedSymmetricKey::import(stored_temporal_key)?;
 
     // Decrypt the loaded key format (this will still be encrypted)
     let decrypted_temporal_key = loaded_temporal_key.decrypt_with(&our_device_key)?;

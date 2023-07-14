@@ -9,7 +9,9 @@ use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
-use crate::key_seal::{AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE, pretty_fingerprint};
+use crate::key_seal::{
+    pretty_fingerprint, AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE,
+};
 
 pub(crate) fn base64_decode(data: &str) -> Vec<u8> {
     B64.decode(data).expect("data to be valid base64")
@@ -27,10 +29,15 @@ pub(crate) fn ecdh_exchange(
     private: &PKey<Private>,
     public: &PKey<Public>,
 ) -> [u8; ECDH_SECRET_BYTE_SIZE] {
-    let mut deriver = Deriver::new(private).expect("creation of ECDH derivation context from private key");
-    deriver.set_peer(public).expect("setting openssl peer for ECDH key derivation");
+    let mut deriver =
+        Deriver::new(private).expect("creation of ECDH derivation context from private key");
+    deriver
+        .set_peer(public)
+        .expect("setting openssl peer for ECDH key derivation");
 
-    let calculated_bytes = deriver.derive_to_vec().expect("calculate common public key");
+    let calculated_bytes = deriver
+        .derive_to_vec()
+        .expect("calculate common public key");
 
     let mut key_slice = [0u8; ECDH_SECRET_BYTE_SIZE];
     key_slice.copy_from_slice(&calculated_bytes);
@@ -59,7 +66,9 @@ pub(crate) fn fingerprint(public_key: &PKey<Public>) -> [u8; FINGERPRINT_SIZE] {
 pub(crate) fn generate_ec_key() -> PKey<Private> {
     let ec_group = ec_group();
     let ec_key = EcKey::generate(&ec_group).expect("EC key generation to succeed");
-    ec_key.try_into().expect("EC private key to be convertible to private key type")
+    ec_key
+        .try_into()
+        .expect("EC private key to be convertible to private key type")
 }
 
 pub(crate) fn generate_info(encryptor: &[u8], decryptor: &[u8]) -> String {
@@ -85,7 +94,8 @@ pub(crate) fn hkdf_with_salt(secret_bytes: &[u8], salt: &[u8], info: &str) -> [u
         salt,
         info.as_bytes(),
         &mut expanded_key,
-    ).expect("hkdf operation to succeed");
+    )
+    .expect("hkdf operation to succeed");
 
     expanded_key
 }
@@ -93,28 +103,35 @@ pub(crate) fn hkdf_with_salt(secret_bytes: &[u8], salt: &[u8], info: &str) -> [u
 pub(crate) fn public_from_private(private_key: &PKey<Private>) -> PKey<Public> {
     let ec_group = ec_group();
 
-    let ec_key = private_key.ec_key().expect("unable to extract EC private key from private key");
+    let ec_key = private_key
+        .ec_key()
+        .expect("unable to extract EC private key from private key");
     // Have to do a weird little dance here as to we need to temporarily go into bytes to get to a
     // public only key
-    let pub_ec_key: EcKey<Public> = EcKey::from_public_key(&ec_group, ec_key.public_key()).expect("unable to turn public key bytes into public key");
+    let pub_ec_key: EcKey<Public> = EcKey::from_public_key(&ec_group, ec_key.public_key())
+        .expect("unable to turn public key bytes into public key");
 
     PKey::from_ec_key(pub_ec_key).expect("unable to wrap public key in common struct")
 }
 
 pub(crate) fn unwrap_key(secret_bytes: &[u8], protected_key: &[u8]) -> [u8; AES_KEY_SIZE] {
-    let wrapping_key = AesKey::new_decrypt(secret_bytes).expect("use of secret bytes when unwrapping key");
+    let wrapping_key =
+        AesKey::new_decrypt(secret_bytes).expect("use of secret bytes when unwrapping key");
 
     let mut plaintext_key = [0u8; AES_KEY_SIZE];
-    aes::unwrap_key(&wrapping_key, None, &mut plaintext_key, protected_key).expect("unwrapping to succeed");
+    aes::unwrap_key(&wrapping_key, None, &mut plaintext_key, protected_key)
+        .expect("unwrapping to succeed");
 
     plaintext_key
 }
 
 pub(crate) fn wrap_key(secret_bytes: &[u8], unprotected_key: &[u8]) -> [u8; AES_KEY_SIZE + 8] {
-    let wrapping_key = AesKey::new_encrypt(secret_bytes).expect("use of secret bytes when wrapping key");
+    let wrapping_key =
+        AesKey::new_encrypt(secret_bytes).expect("use of secret bytes when wrapping key");
 
     let mut enciphered_key = [0u8; AES_KEY_SIZE + 8];
-    aes::wrap_key(&wrapping_key, None, &mut enciphered_key, unprotected_key).expect("wrapping to succeed");
+    aes::wrap_key(&wrapping_key, None, &mut enciphered_key, unprotected_key)
+        .expect("wrapping to succeed");
 
     enciphered_key
 }

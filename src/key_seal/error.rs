@@ -10,11 +10,15 @@ pub struct KeySealError {
 
 impl KeySealError {
     pub(crate) fn bad_format(err: ErrorStack) -> Self {
-        Self { kind: KeySealErrorKind::BadFormat(err) }
+        Self {
+            kind: KeySealErrorKind::BadFormat(err),
+        }
     }
 
     pub(crate) fn export_failed(err: ErrorStack) -> Self {
-        Self { kind: KeySealErrorKind::ExportFailed(err) }
+        Self {
+            kind: KeySealErrorKind::ExportFailed(err),
+        }
     }
 }
 

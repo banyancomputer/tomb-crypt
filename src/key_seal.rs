@@ -34,7 +34,7 @@ impl EcEncryptionKey {
     }
 
     pub fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], KeySealError> {
-        Ok(self.public_key()?.fingerprint()?)
+        self.public_key()?.fingerprint()
     }
 
     pub fn generate() -> Result<Self, KeySealError> {
@@ -42,13 +42,15 @@ impl EcEncryptionKey {
     }
 
     pub fn import(pem_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let raw_private = PKey::private_key_from_pkcs8(&pem_bytes).map_err(KeySealError::bad_format)?;
+        let raw_private =
+            PKey::private_key_from_pkcs8(pem_bytes).map_err(KeySealError::bad_format)?;
 
         Ok(Self(raw_private))
     }
 
     pub fn import_bytes(der_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let raw_private = PKey::private_key_from_der(&der_bytes).expect("parsing a valid der private key");
+        let raw_private =
+            PKey::private_key_from_der(der_bytes).expect("parsing a valid der private key");
         Ok(Self(raw_private))
     }
 
@@ -78,12 +80,14 @@ impl EcPublicEncryptionKey {
     }
 
     pub fn import(pem_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let raw_public = PKey::public_key_from_pem(pem_bytes).expect("parsing a valid pem public key");
+        let raw_public =
+            PKey::public_key_from_pem(pem_bytes).expect("parsing a valid pem public key");
         Ok(Self(raw_public))
     }
 
     pub fn import_bytes(der_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let raw_public = PKey::public_key_from_der(der_bytes).expect("parsing a valid der public key");
+        let raw_public =
+            PKey::public_key_from_der(der_bytes).expect("parsing a valid der public key");
         Ok(Self(raw_public))
     }
 }
@@ -95,15 +99,19 @@ pub struct EncryptedSymmetricKey {
 }
 
 impl EncryptedSymmetricKey {
-    pub fn decrypt_with(&self, recipient_key: &EcEncryptionKey) -> Result<SymmetricKey, KeySealError> {
+    pub fn decrypt_with(
+        &self,
+        recipient_key: &EcEncryptionKey,
+    ) -> Result<SymmetricKey, KeySealError> {
         let ephemeral_public_key = EcPublicEncryptionKey::import_bytes(self.public_key.as_ref())?;
         let ecdh_shared_secret = internal::ecdh_exchange(&recipient_key.0, &ephemeral_public_key.0);
 
         let info = internal::generate_info(
             ephemeral_public_key.fingerprint()?.as_ref(),
-            recipient_key.fingerprint()?.as_ref()
+            recipient_key.fingerprint()?.as_ref(),
         );
-        let hkdf_shared_secret = internal::hkdf_with_salt(&ecdh_shared_secret, self.salt.as_ref(), &info);
+        let hkdf_shared_secret =
+            internal::hkdf_with_salt(&ecdh_shared_secret, self.salt.as_ref(), &info);
 
         let temporal_key_bytes = internal::unwrap_key(&hkdf_shared_secret, self.data.as_ref());
 
@@ -111,15 +119,16 @@ impl EncryptedSymmetricKey {
     }
 
     pub fn export(&self) -> String {
-        vec![
+        [
             internal::base64_encode(&self.salt),
             internal::base64_encode(&self.data),
-            internal::base64_encode(self.public_key.as_ref())
-        ].join(".")
+            internal::base64_encode(self.public_key.as_ref()),
+        ]
+        .join(".")
     }
 
     pub fn import(serialized: &str) -> Result<Self, KeySealError> {
-        let components: Vec<_> = serialized.split(".").collect();
+        let components: Vec<_> = serialized.split('.').collect();
 
         let raw_salt = internal::base64_decode(components[0]);
         let mut salt = [0u8; SALT_SIZE];
@@ -131,21 +140,28 @@ impl EncryptedSymmetricKey {
 
         let public_key = internal::base64_decode(components[2]);
 
-        Ok(Self { salt, data, public_key })
+        Ok(Self {
+            salt,
+            data,
+            public_key,
+        })
     }
 }
 
 pub struct SymmetricKey([u8; AES_KEY_SIZE]);
 
 impl SymmetricKey {
-    pub fn encrypt_for(&self, recipient_key: &EcPublicEncryptionKey) -> Result<EncryptedSymmetricKey, KeySealError> {
+    pub fn encrypt_for(
+        &self,
+        recipient_key: &EcPublicEncryptionKey,
+    ) -> Result<EncryptedSymmetricKey, KeySealError> {
         let ephemeral_key = EcEncryptionKey::generate()?;
 
         let ecdh_shared_secret = internal::ecdh_exchange(&ephemeral_key.0, &recipient_key.0);
 
         let info = internal::generate_info(
             ephemeral_key.fingerprint()?.as_ref(),
-            recipient_key.fingerprint()?.as_ref()
+            recipient_key.fingerprint()?.as_ref(),
         );
         let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret, &info);
 
@@ -162,8 +178,7 @@ impl SymmetricKey {
     #[cfg(test)]
     fn generate() -> Self {
         let mut key_data = [0u8; AES_KEY_SIZE];
-        openssl::rand::rand_bytes(&mut key_data)
-            .expect("unable to generate key data");
+        openssl::rand::rand_bytes(&mut key_data).expect("unable to generate key data");
         Self(key_data)
     }
 }
