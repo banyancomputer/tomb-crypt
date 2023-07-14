@@ -3,6 +3,7 @@ use openssl::pkey::{PKey, Private, Public};
 mod internal;
 
 const AES_KEY_SIZE: usize = 32;
+const ECDH_SECRET_BYTE_SIZE: usize = 48;
 const FINGERPRINT_SIZE: usize = 20;
 const SALT_SIZE: usize = 16;
 
@@ -23,6 +24,12 @@ impl EcEncryptionKey {
             .expect("unable to export private key to pem")
     }
 
+    pub fn export_bytes(&self) -> Vec<u8> {
+        self.0
+            .private_key_to_der()
+            .expect("unable to export private key to der")
+    }
+
     pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
         self.public_key().fingerprint()
     }
@@ -33,6 +40,11 @@ impl EcEncryptionKey {
 
     pub fn import(pem_bytes: &[u8]) -> Self {
         let raw_private = PKey::private_key_from_pkcs8(&pem_bytes).expect("parsing a valid pem private key");
+        Self(raw_private)
+    }
+
+    pub fn import_bytes(der_bytes: &[u8]) -> Self {
+        let raw_private = PKey::private_key_from_der(&der_bytes).expect("parsing a valid der private key");
         Self(raw_private)
     }
 
@@ -51,6 +63,12 @@ impl EcPublicEncryptionKey {
             .expect("unable to export public key to pem")
     }
 
+    pub fn export_bytes(&self) -> Vec<u8> {
+        self.0
+            .public_key_to_der()
+            .expect("unable to export public key to der")
+    }
+
     pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
         internal::fingerprint(&self.0)
     }
@@ -59,18 +77,22 @@ impl EcPublicEncryptionKey {
         let raw_public = PKey::public_key_from_pem(pem_bytes).expect("parsing a valid pem public key");
         Self(raw_public)
     }
+
+    pub fn import_bytes(der_bytes: &[u8]) -> Self {
+        let raw_public = PKey::public_key_from_der(der_bytes).expect("parsing a valid der public key");
+        Self(raw_public)
+    }
 }
 
 pub struct EncryptedTemporalKey {
     data: [u8; AES_KEY_SIZE + 8],
     salt: [u8; SALT_SIZE],
-    public_key_pem: Vec<u8>,
+    public_key: Vec<u8>,
 }
 
 impl EncryptedTemporalKey {
     pub fn decrypt_with(&self, recipient_key: &EcEncryptionKey) -> TemporalKey {
-        let ephemeral_public_key = EcPublicEncryptionKey::import(self.public_key_pem.as_ref());
-
+        let ephemeral_public_key = EcPublicEncryptionKey::import_bytes(self.public_key.as_ref());
         let ecdh_shared_secret = internal::ecdh_exchange(&recipient_key.0, &ephemeral_public_key.0);
 
         let info = internal::generate_info(
@@ -88,7 +110,7 @@ impl EncryptedTemporalKey {
         vec![
             internal::base64_encode(&self.salt),
             internal::base64_encode(&self.data),
-            internal::base64_encode(self.public_key_pem.as_ref())
+            internal::base64_encode(self.public_key.as_ref())
         ].join(".")
     }
 
@@ -103,9 +125,9 @@ impl EncryptedTemporalKey {
         let mut data = [0u8; AES_KEY_SIZE + 8];
         data.copy_from_slice(raw_data.as_ref());
 
-        let public_key_pem = internal::base64_decode(components[2]);
+        let public_key = internal::base64_decode(components[2]);
 
-        Self { salt, data, public_key_pem }
+        Self { salt, data, public_key }
     }
 }
 
@@ -124,13 +146,12 @@ impl TemporalKey {
         let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret, &info);
 
         let encrypted_key = internal::wrap_key(&hkdf_shared_secret, &self.0);
-
-        let exported_ephemeral_key = ephemeral_key.public_key().export();
+        let exported_ephemeral_key = ephemeral_key.public_key().export_bytes();
 
         EncryptedTemporalKey {
             data: encrypted_key,
             salt,
-            public_key_pem: exported_ephemeral_key,
+            public_key: exported_ephemeral_key,
         }
     }
 
@@ -138,8 +159,8 @@ impl TemporalKey {
     fn generate() -> Self {
         let mut key_data = [0u8; AES_KEY_SIZE];
         openssl::rand::rand_bytes(&mut key_data)
-            .map_err(|err| format!("unable to generate key data: {err:?}"))?;
-        Ok(Self(key_data))
+            .expect("unable to generate key data");
+        Self(key_data)
     }
 }
 
