@@ -1,6 +1,9 @@
 use openssl::pkey::{PKey, Private, Public};
 
+mod error;
 mod internal;
+
+pub use error::KeySealError;
 
 const AES_KEY_SIZE: usize = 32;
 const ECDH_SECRET_BYTE_SIZE: usize = 48;
@@ -18,92 +21,93 @@ pub fn pretty_fingerprint(fingerprint_bytes: &[u8]) -> String {
 pub struct EcEncryptionKey(PKey<Private>);
 
 impl EcEncryptionKey {
-    pub fn export(&self) -> Vec<u8> {
+    pub fn export(&self) -> Result<Vec<u8>, KeySealError> {
         self.0
             .private_key_to_pem_pkcs8()
-            .expect("unable to export private key to pem")
+            .map_err(KeySealError::export_failed)
     }
 
-    pub fn export_bytes(&self) -> Vec<u8> {
+    pub fn export_bytes(&self) -> Result<Vec<u8>, KeySealError> {
         self.0
             .private_key_to_der()
-            .expect("unable to export private key to der")
+            .map_err(KeySealError::export_failed)
     }
 
-    pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
-        self.public_key().fingerprint()
+    pub fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], KeySealError> {
+        Ok(self.public_key()?.fingerprint()?)
     }
 
-    pub fn generate() -> Self {
-        Self(internal::generate_ec_key())
+    pub fn generate() -> Result<Self, KeySealError> {
+        Ok(Self(internal::generate_ec_key()))
     }
 
-    pub fn import(pem_bytes: &[u8]) -> Self {
-        let raw_private = PKey::private_key_from_pkcs8(&pem_bytes).expect("parsing a valid pem private key");
-        Self(raw_private)
+    pub fn import(pem_bytes: &[u8]) -> Result<Self, KeySealError> {
+        let raw_private = PKey::private_key_from_pkcs8(&pem_bytes).map_err(KeySealError::bad_format)?;
+
+        Ok(Self(raw_private))
     }
 
-    pub fn import_bytes(der_bytes: &[u8]) -> Self {
+    pub fn import_bytes(der_bytes: &[u8]) -> Result<Self, KeySealError> {
         let raw_private = PKey::private_key_from_der(&der_bytes).expect("parsing a valid der private key");
-        Self(raw_private)
+        Ok(Self(raw_private))
     }
 
-    pub fn public_key(&self) -> EcPublicEncryptionKey {
+    pub fn public_key(&self) -> Result<EcPublicEncryptionKey, KeySealError> {
         let ec_public = internal::public_from_private(&self.0);
-        EcPublicEncryptionKey(ec_public)
+        Ok(EcPublicEncryptionKey(ec_public))
     }
 }
 
 pub struct EcPublicEncryptionKey(PKey<Public>);
 
 impl EcPublicEncryptionKey {
-    pub fn export(&self) -> Vec<u8> {
+    pub fn export(&self) -> Result<Vec<u8>, KeySealError> {
         self.0
             .public_key_to_pem()
-            .expect("unable to export public key to pem")
+            .map_err(KeySealError::export_failed)
     }
 
-    pub fn export_bytes(&self) -> Vec<u8> {
+    pub fn export_bytes(&self) -> Result<Vec<u8>, KeySealError> {
         self.0
             .public_key_to_der()
-            .expect("unable to export public key to der")
+            .map_err(KeySealError::export_failed)
     }
 
-    pub fn fingerprint(&self) -> [u8; FINGERPRINT_SIZE] {
-        internal::fingerprint(&self.0)
+    pub fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], KeySealError> {
+        Ok(internal::fingerprint(&self.0))
     }
 
-    pub fn import(pem_bytes: &[u8]) -> Self {
+    pub fn import(pem_bytes: &[u8]) -> Result<Self, KeySealError> {
         let raw_public = PKey::public_key_from_pem(pem_bytes).expect("parsing a valid pem public key");
-        Self(raw_public)
+        Ok(Self(raw_public))
     }
 
-    pub fn import_bytes(der_bytes: &[u8]) -> Self {
+    pub fn import_bytes(der_bytes: &[u8]) -> Result<Self, KeySealError> {
         let raw_public = PKey::public_key_from_der(der_bytes).expect("parsing a valid der public key");
-        Self(raw_public)
+        Ok(Self(raw_public))
     }
 }
 
-pub struct EncryptedTemporalKey {
+pub struct EncryptedSymmetricKey {
     data: [u8; AES_KEY_SIZE + 8],
     salt: [u8; SALT_SIZE],
     public_key: Vec<u8>,
 }
 
-impl EncryptedTemporalKey {
-    pub fn decrypt_with(&self, recipient_key: &EcEncryptionKey) -> TemporalKey {
-        let ephemeral_public_key = EcPublicEncryptionKey::import_bytes(self.public_key.as_ref());
+impl EncryptedSymmetricKey {
+    pub fn decrypt_with(&self, recipient_key: &EcEncryptionKey) -> Result<SymmetricKey, KeySealError> {
+        let ephemeral_public_key = EcPublicEncryptionKey::import_bytes(self.public_key.as_ref())?;
         let ecdh_shared_secret = internal::ecdh_exchange(&recipient_key.0, &ephemeral_public_key.0);
 
         let info = internal::generate_info(
-            ephemeral_public_key.fingerprint().as_ref(),
-            recipient_key.fingerprint().as_ref()
+            ephemeral_public_key.fingerprint()?.as_ref(),
+            recipient_key.fingerprint()?.as_ref()
         );
         let hkdf_shared_secret = internal::hkdf_with_salt(&ecdh_shared_secret, self.salt.as_ref(), &info);
 
         let temporal_key_bytes = internal::unwrap_key(&hkdf_shared_secret, self.data.as_ref());
 
-        TemporalKey(temporal_key_bytes)
+        Ok(SymmetricKey(temporal_key_bytes))
     }
 
     pub fn export(&self) -> String {
@@ -114,7 +118,7 @@ impl EncryptedTemporalKey {
         ].join(".")
     }
 
-    pub fn import(serialized: &str) -> Self {
+    pub fn import(serialized: &str) -> Result<Self, KeySealError> {
         let components: Vec<_> = serialized.split(".").collect();
 
         let raw_salt = internal::base64_decode(components[0]);
@@ -127,32 +131,32 @@ impl EncryptedTemporalKey {
 
         let public_key = internal::base64_decode(components[2]);
 
-        Self { salt, data, public_key }
+        Ok(Self { salt, data, public_key })
     }
 }
 
-pub struct TemporalKey([u8; AES_KEY_SIZE]);
+pub struct SymmetricKey([u8; AES_KEY_SIZE]);
 
-impl TemporalKey {
-    pub fn encrypt_for(&self, recipient_key: &EcPublicEncryptionKey) -> EncryptedTemporalKey {
-        let ephemeral_key = EcEncryptionKey::generate();
+impl SymmetricKey {
+    pub fn encrypt_for(&self, recipient_key: &EcPublicEncryptionKey) -> Result<EncryptedSymmetricKey, KeySealError> {
+        let ephemeral_key = EcEncryptionKey::generate()?;
 
         let ecdh_shared_secret = internal::ecdh_exchange(&ephemeral_key.0, &recipient_key.0);
 
         let info = internal::generate_info(
-            ephemeral_key.fingerprint().as_ref(),
-            recipient_key.fingerprint().as_ref()
+            ephemeral_key.fingerprint()?.as_ref(),
+            recipient_key.fingerprint()?.as_ref()
         );
         let (salt, hkdf_shared_secret) = internal::hkdf(&ecdh_shared_secret, &info);
 
         let encrypted_key = internal::wrap_key(&hkdf_shared_secret, &self.0);
-        let exported_ephemeral_key = ephemeral_key.public_key().export_bytes();
+        let exported_ephemeral_key = ephemeral_key.public_key()?.export_bytes()?;
 
-        EncryptedTemporalKey {
+        Ok(EncryptedSymmetricKey {
             data: encrypted_key,
             salt,
             public_key: exported_ephemeral_key,
-        }
+        })
     }
 
     #[cfg(test)]
@@ -164,13 +168,13 @@ impl TemporalKey {
     }
 }
 
-impl AsRef<[u8]> for TemporalKey {
+impl AsRef<[u8]> for SymmetricKey {
     fn as_ref(&self) -> &[u8] {
         &self.0
     }
 }
 
-impl From<[u8; AES_KEY_SIZE]> for TemporalKey {
+impl From<[u8; AES_KEY_SIZE]> for SymmetricKey {
     fn from(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }

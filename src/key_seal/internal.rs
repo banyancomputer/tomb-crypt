@@ -9,7 +9,7 @@ use openssl::hash::MessageDigest;
 use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
-use crate::crypto::{AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE};
+use crate::key_seal::{AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE, pretty_fingerprint};
 
 pub(crate) fn base64_decode(data: &str) -> Vec<u8> {
     B64.decode(data).expect("data to be valid base64")
@@ -63,8 +63,6 @@ pub(crate) fn generate_ec_key() -> PKey<Private> {
 }
 
 pub(crate) fn generate_info(encryptor: &[u8], decryptor: &[u8]) -> String {
-    use crate::crypto::pretty_fingerprint;
-
     format!(
         "use=key_seal,encryptor={},decryptor={}",
         pretty_fingerprint(encryptor),
