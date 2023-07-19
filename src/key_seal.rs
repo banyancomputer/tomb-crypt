@@ -1,16 +1,15 @@
-#[allow(unused_variables)]
 mod common;
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
+#[cfg(not(target_arch = "wasm32"))]
 mod native;
 
-#[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
+#[cfg(not(target_arch = "wasm32"))]
 pub use native::*;
 
-#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
+#[cfg(target_arch = "wasm32")]
 mod wasm;
 
-#[cfg(all(target_arch = "wasm32", feature = "wasm"))]
+#[cfg(target_arch = "wasm32")]
 pub use wasm::*;
 
 pub fn generate_info(encrypt_fingerprint_bytes: &[u8], decrypt_fingerprint_bytes: &[u8]) -> String {
@@ -67,27 +66,6 @@ mod tests {
 
     const SEALED_KEY: &str = "GvQwdfPJ97rUTOl/UUHWjw==.knWedkNCmB11L2uRjpj6tU60mQs25kVSvCYMxDWiR9HKPgeR2sgISw==.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECa67CCuaPgE+CuGb7acOFKdnzYy9I5hbU3AOQmi4clGAcmd9VAm+JeQqbz8mB1wwJQm1jhpYgcAjwC+kEPL9W2pneRNWwSm0lv15h2G0Jo8mA1NJUu7MDTFRNZQlGJf0";
 
-    async fn test_pem_key_parse_and_use() -> Result<(), KeySealError> {
-        use crate::key_seal::common::{ProtectedKey, WrappingPrivateKey};
-
-        let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
-        let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
-        let plain_key = protected_key.decrypt_with(&private_key).await?;
-        assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
-
-        Ok(())
-    }
-
-    async fn test_der_key_parse_and_use() -> Result<(), KeySealError> {
-        use crate::key_seal::common::{ProtectedKey, WrappingPrivateKey};
-
-        let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
-        let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
-        let plain_key = protected_key.decrypt_with(&private_key).await?;
-        assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
-        Ok(())
-    }
-
     // this is a temporary test to ensure the end to end bits are working as expected while proper
     // tests are built
     async fn test_end_to_end() -> Result<(), KeySealError> {
@@ -143,9 +121,30 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(all(not(target_arch = "wasm32"), feature = "native"))]
+    #[cfg(not(target_arch = "wasm32"))]
     mod native_tests {
         use super::*;
+
+        async fn test_pem_key_parse_and_use() -> Result<(), KeySealError> {
+            use crate::key_seal::common::{ProtectedKey, WrappingPrivateKey};
+
+            let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
+            let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
+            let plain_key = protected_key.decrypt_with(&private_key).await?;
+            assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
+
+            Ok(())
+        }
+
+        async fn test_der_key_parse_and_use() -> Result<(), KeySealError> {
+            use crate::key_seal::common::{ProtectedKey, WrappingPrivateKey};
+
+            let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
+            let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
+            let plain_key = protected_key.decrypt_with(&private_key).await?;
+            assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
+            Ok(())
+        }
 
         #[tokio::test]
         async fn pem_key_parse_and_use() -> Result<(), KeySealError> {
@@ -168,7 +167,7 @@ mod tests {
         }
     }
 
-    #[cfg(all(target_arch = "wasm32", feature = "native"))]
+    #[cfg(target_arch = "wasm32")]
     mod wasm_tests {
         use super::*;
         use wasm_bindgen_test::*;
