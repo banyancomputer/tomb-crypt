@@ -10,7 +10,7 @@ base64 = { version = "^0.21" }
 async-trait = "0.1.71"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-openssl = { version = "^0.10", features = ["v110"] }
+openssl = { version = "^0.10", features = ["vendored"] }
 openssl-hkdf = { version = "^0.2" }
 tokio = { version = "^1", default-features = false, features = ["rt", "rt-multi-thread", "test-util", "tokio-macros", "macros"] }
 
