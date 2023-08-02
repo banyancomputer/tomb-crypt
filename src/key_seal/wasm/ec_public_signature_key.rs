@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use web_sys::CryptoKey;
 
-use crate::key_seal::common::{FINGERPRINT_SIZE, ApiPublicKey};
-use crate::key_seal::wasm::*;
+use crate::key_seal::common::{ApiPublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::wasm::internal::{EcKeyExportFormat, EcKeyType};
+use crate::key_seal::wasm::*;
 use crate::key_seal::KeySealError;
 
 pub struct EcPublicSignatureKey(pub(crate) CryptoKey);
@@ -31,16 +31,18 @@ impl ApiPublicKey for EcPublicSignatureKey {
     }
 
     async fn import(pem_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let public_key = internal::import_ec_key_pem(EcKeyExportFormat::Spki, pem_bytes, EcKeyType::Signature)
-            .await
-            .map_err(KeySealError::subtle_crypto_error)?;
+        let public_key =
+            internal::import_ec_key_pem(EcKeyExportFormat::Spki, pem_bytes, EcKeyType::Signature)
+                .await
+                .map_err(KeySealError::subtle_crypto_error)?;
         Ok(Self(public_key))
     }
 
     async fn import_bytes(der_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let public_key = internal::import_ec_key_der(EcKeyExportFormat::Spki, der_bytes, EcKeyType::Signature)
-            .await
-            .map_err(KeySealError::subtle_crypto_error)?;
+        let public_key =
+            internal::import_ec_key_der(EcKeyExportFormat::Spki, der_bytes, EcKeyType::Signature)
+                .await
+                .map_err(KeySealError::subtle_crypto_error)?;
         Ok(Self(public_key))
     }
 }

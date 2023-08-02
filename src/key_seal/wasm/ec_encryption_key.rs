@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use web_sys::CryptoKey;
 
-use crate::key_seal::common::{FINGERPRINT_SIZE, WrappingPrivateKey, WrappingPublicKey};
-use crate::key_seal::wasm::*;
+use crate::key_seal::common::{WrappingPrivateKey, WrappingPublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::wasm::internal::{EcKeyExportFormat, EcKeyType};
+use crate::key_seal::wasm::*;
 use crate::key_seal::KeySealError;
 
 pub struct EcEncryptionKey {
@@ -45,9 +45,10 @@ impl WrappingPrivateKey for EcEncryptionKey {
     }
 
     async fn import(pem_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let private_key = internal::import_ec_key_pem(EcKeyExportFormat::Pkcs8, pem_bytes, EcKeyType::Encryption)
-            .await
-            .map_err(KeySealError::bad_format)?;
+        let private_key =
+            internal::import_ec_key_pem(EcKeyExportFormat::Pkcs8, pem_bytes, EcKeyType::Encryption)
+                .await
+                .map_err(KeySealError::bad_format)?;
         Ok(Self {
             private_key,
             public_key: None,
@@ -55,9 +56,10 @@ impl WrappingPrivateKey for EcEncryptionKey {
     }
 
     async fn import_bytes(der_bytes: &[u8]) -> Result<Self, KeySealError> {
-        let private_key = internal::import_ec_key_der(EcKeyExportFormat::Pkcs8, der_bytes, EcKeyType::Encryption)
-            .await
-            .map_err(KeySealError::bad_format)?;
+        let private_key =
+            internal::import_ec_key_der(EcKeyExportFormat::Pkcs8, der_bytes, EcKeyType::Encryption)
+                .await
+                .map_err(KeySealError::bad_format)?;
         Ok(Self {
             private_key,
             public_key: None,

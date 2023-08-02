@@ -68,7 +68,7 @@ mod tests {
 
     // this is a temporary test to ensure the end to end bits are working as expected while proper
     // tests are built
-    async fn test_end_to_end() -> Result<(), KeySealError> {
+    async fn test_encryption_end_to_end() -> Result<(), KeySealError> {
         use crate::key_seal::common::{PlainKey, ProtectedKey, WrappingPrivateKey};
 
         let temporal_key = SymmetricKey::from(*PLAINTEXT_SYMMETRIC_KEY);
@@ -90,7 +90,7 @@ mod tests {
 
     // this is a temporary test to ensure the end to end bits are working as expected while proper
     // tests are built
-    async fn test_key_roundtripping() -> Result<(), KeySealError> {
+    async fn test_encryption_key_roundtripping() -> Result<(), KeySealError> {
         use crate::key_seal::common::{WrappingPrivateKey, WrappingPublicKey};
 
         let key = EcEncryptionKey::generate().await?;
@@ -115,6 +115,36 @@ mod tests {
 
         let raw_public_key_pem = public_key.export().await?;
         let imported_public_key = EcPublicEncryptionKey::import(&raw_public_key_pem).await?;
+        let reexported_public_key_pem = imported_public_key.export().await?;
+        assert_eq!(raw_public_key_pem, reexported_public_key_pem);
+
+        Ok(())
+    }
+
+    async fn test_signature_key_roundtripping() -> Result<(), KeySealError> {
+        use crate::key_seal::common::{ApiPrivateKey, ApiPublicKey};
+
+        let key = EcSignatureKey::generate().await?;
+        let public_key = key.public_key()?;
+
+        // dirty comparisons but works for now
+        let raw_key_bytes = key.export_bytes().await?;
+        let imported_key = EcSignatureKey::import_bytes(&raw_key_bytes).await?;
+        let reexported_key_bytes = imported_key.export_bytes().await?;
+        assert_eq!(raw_key_bytes, reexported_key_bytes);
+
+        let raw_public_key_bytes = public_key.export_bytes().await?;
+        let imported_public_key = EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
+        let reexported_public_key_bytes = imported_public_key.export_bytes().await?;
+        assert_eq!(raw_public_key_bytes, reexported_public_key_bytes);
+
+        let raw_key_pem = key.export().await?;
+        let imported_key = EcSignatureKey::import(&raw_key_pem).await?;
+        let reexported_key_pem = imported_key.export().await?;
+        assert_eq!(raw_key_pem, reexported_key_pem);
+
+        let raw_public_key_pem = public_key.export().await?;
+        let imported_public_key = EcPublicSignatureKey::import(&raw_public_key_pem).await?;
         let reexported_public_key_pem = imported_public_key.export().await?;
         assert_eq!(raw_public_key_pem, reexported_public_key_pem);
 
@@ -157,13 +187,13 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn end_to_end() -> Result<(), KeySealError> {
-            test_end_to_end().await
+        async fn encryption_end_to_end() -> Result<(), KeySealError> {
+            test_encryption_end_to_end().await
         }
 
         #[tokio::test]
-        async fn key_roundtripping() -> Result<(), KeySealError> {
-            test_key_roundtripping().await
+        async fn encryption_key_roundtripping() -> Result<(), KeySealError> {
+            test_encryption_key_roundtripping().await
         }
     }
 
@@ -175,13 +205,18 @@ mod tests {
         wasm_bindgen_test_configure!(run_in_browser);
 
         #[wasm_bindgen_test]
-        async fn end_to_end() -> Result<(), KeySealError> {
-            test_end_to_end().await
+        async fn encryption_end_to_end() -> Result<(), KeySealError> {
+            test_encryption_end_to_end().await
         }
 
         #[wasm_bindgen_test]
-        async fn key_roundtripping() -> Result<(), KeySealError> {
-            test_key_roundtripping().await
+        async fn encryption_key_roundtripping() -> Result<(), KeySealError> {
+            test_encryption_key_roundtripping().await
+        }
+
+        #[wasm_bindgen_test]
+        async fn signature_key_roundtripping() -> Result<(), KeySealError> {
+            test_signature_key_roundtripping().await
         }
     }
 }

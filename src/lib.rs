@@ -5,9 +5,7 @@ pub use crate::key_seal::pretty_fingerprint;
 pub mod prelude {
     pub use crate::key_seal::common::*;
     pub use crate::key_seal::{
-        EcEncryptionKey, EcPublicEncryptionKey,
-        EcSignatureKey, EcPublicSignatureKey,
-        EncryptedSymmetricKey, SymmetricKey,
-        KeySealError,
+        EcEncryptionKey, EcPublicEncryptionKey, EcPublicSignatureKey, EcSignatureKey,
+        EncryptedSymmetricKey, KeySealError, SymmetricKey,
     };
 }

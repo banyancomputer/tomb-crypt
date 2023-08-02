@@ -148,9 +148,9 @@ pub trait ApiPublicKey: Sized {
     async fn import(pem_bytes: &[u8]) -> Result<Self, Self::Error>;
 
     /// Import a standard DER formatted EC key byte string
-    async fn import_bytes(der_bytes: &[u8]) -> Result<Self, Self::Error>;    
+    async fn import_bytes(der_bytes: &[u8]) -> Result<Self, Self::Error>;
 }
- 
+
 /// A wrapper around an unprotected 256-bit AES key. The raw key can act as a raw byte string for
 /// other implementation to use for encryption and decryption.
 #[async_trait(?Send)]
