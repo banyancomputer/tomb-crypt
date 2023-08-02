@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use openssl::pkey::{PKey, Private};
 
-use crate::key_seal::common::*;
+use crate::key_seal::common::{FINGERPRINT_SIZE, WrappingPrivateKey, WrappingPublicKey};
 use crate::key_seal::native::*;
 use crate::key_seal::KeySealError;
 

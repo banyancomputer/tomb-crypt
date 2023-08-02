@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 
-use crate::key_seal::common::*;
+use crate::key_seal::common::{
+    AES_KEY_SIZE, WrappingPrivateKey, WrappingPublicKey, PlainKey,
+};
 use crate::key_seal::native::*;
 use crate::key_seal::{generate_info, KeySealError};
 
@@ -36,15 +38,6 @@ impl PlainKey for SymmetricKey {
         })
     }
 }
-
-//impl SymmetricKey {
-//    #[cfg(test)]
-//    fn generate() -> Self {
-//        let mut key_data = [0u8; AES_KEY_SIZE];
-//        openssl::rand::rand_bytes(&mut key_data).expect("unable to generate key data");
-//        Self(key_data)
-//    }
-//}
 
 impl AsRef<[u8]> for SymmetricKey {
     fn as_ref(&self) -> &[u8] {

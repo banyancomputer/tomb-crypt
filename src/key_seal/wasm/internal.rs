@@ -36,6 +36,35 @@ pub(crate) type JsResult<T> = Result<T, JsError>;
 
 /*  Crypto Utilities*/
 
+pub(crate) enum EcKeyType {
+    Encryption,
+    Signature,
+}
+
+pub(crate) enum EcKeyExportFormat {
+    Pkcs8,
+    Spki,
+    Raw
+}
+
+impl EcKeyExportFormat {
+    pub(crate) fn as_str(&self) -> &'static str {
+        match self {
+            EcKeyExportFormat::Pkcs8 => "pkcs8",
+            EcKeyExportFormat::Spki => "spki",
+            EcKeyExportFormat::Raw => "raw",
+        }
+    }
+}
+
+/// Return EcKeyGenParams for the given key type
+pub(crate) fn ec_key_gen_params(key_type: EcKeyType) -> EcKeyGenParams {
+    match key_type {
+        EcKeyType::Encryption => EcKeyGenParams::new("ECDH", "P-384"),
+        EcKeyType::Signature => EcKeyGenParams::new("ECDSA", "P-384"),
+    }
+}
+
 /// Get the crypto object from the window
 pub(crate) fn crypto() -> Result<web_sys::Crypto, KeySealError> {
     window()
@@ -94,9 +123,11 @@ pub(crate) fn public_key(key_pair: &CryptoKeyPair) -> CryptoKey {
         .into()
 }
 
-/// Generate a new EC encryption key pair
-pub(crate) async fn generate_ec_encryption_key_pair() -> JsResult<CryptoKeyPair> {
-    let params = EcKeyGenParams::new("ECDH", "P-384");
+/// Generate a new EC key pair
+/// # Arguments
+/// * `key_type` - The type of EC key to generate
+pub(crate) async fn generate_ec_key_pair(key_type: EcKeyType) -> JsResult<CryptoKeyPair> {
+    let params = ec_key_gen_params(key_type);
     let usages = js_array(&["deriveBits"]);
     let crypto = subtle_crypto()?;
     let key_pair = crypto_method(crypto.generate_key_with_object(&params, true, &usages)).await?;
@@ -104,12 +135,13 @@ pub(crate) async fn generate_ec_encryption_key_pair() -> JsResult<CryptoKeyPair>
 }
 
 /// Import an ec key from a &[u8] in der format
-pub(crate) async fn import_ec_key_der(format: &str, der_bytes: &[u8]) -> JsResult<CryptoKey> {
+pub(crate) async fn import_ec_key_der(key_export_format: EcKeyExportFormat, der_bytes: &[u8], key_type: EcKeyType) -> JsResult<CryptoKey> {
     let crypto = subtle_crypto()?;
+    let params = ec_key_gen_params(key_type);
     let import = crypto_method(crypto.import_key_with_object(
-        format,
+        key_export_format.as_str(),
         &Uint8Array::from(der_bytes),
-        &EcKeyGenParams::new("ECDH", "P-384"),
+        &params,
         true,
         &js_array(&["deriveBits"]),
     ))
@@ -118,18 +150,18 @@ pub(crate) async fn import_ec_key_der(format: &str, der_bytes: &[u8]) -> JsResul
 }
 
 /// Import an ec key from a &[u8] in pem format
-pub(crate) async fn import_ec_key_pem(format: &str, public_key: &[u8]) -> JsResult<CryptoKey> {
+pub(crate) async fn import_ec_key_pem(key_export_format: EcKeyExportFormat, public_key: &[u8], key_type: EcKeyType) -> JsResult<CryptoKey> {
     let pem = std::str::from_utf8(public_key).unwrap();
     let pem = parse(pem).unwrap();
     let contents = pem.contents();
-    let import = import_ec_key_der(format, contents).await?;
+    let import = import_ec_key_der(key_export_format, contents, key_type).await?;
     Ok(import)
 }
 
 /// Export an ec key as a Vec<u8> in der format
-pub(crate) async fn export_ec_key_der(format: &str, public_key: &CryptoKey) -> JsResult<Vec<u8>> {
+pub(crate) async fn export_ec_key_der(key_export_format: EcKeyExportFormat, public_key: &CryptoKey) -> JsResult<Vec<u8>> {
     let crypto = subtle_crypto()?;
-    let export = crypto_method(crypto.export_key(format, public_key)).await?;
+    let export = crypto_method(crypto.export_key(key_export_format.as_str(), public_key)).await?;
     let export = export
         .dyn_into::<ArrayBuffer>()
         .expect("export result to be an array buffer");
@@ -138,13 +170,13 @@ pub(crate) async fn export_ec_key_der(format: &str, public_key: &CryptoKey) -> J
 }
 
 /// Export an ec key as a Vec<u8> in pem format
-pub(crate) async fn export_ec_key_pem(format: &str, public_key: &CryptoKey) -> JsResult<Vec<u8>> {
-    let tag: &str = match format {
-        "pkcs8" => "PRIVATE KEY",
-        "spki" => "PUBLIC KEY",
+pub(crate) async fn export_ec_key_pem(key_export_format: EcKeyExportFormat, public_key: &CryptoKey) -> JsResult<Vec<u8>> {
+    let tag: &str = match key_export_format {
+        EcKeyExportFormat::Pkcs8 => "PRIVATE KEY",
+        EcKeyExportFormat::Spki => "PUBLIC KEY",
         _ => panic!("invalid format"),
     };
-    let key_contents = export_ec_key_der(format, public_key).await?;
+    let key_contents = export_ec_key_der(key_export_format, public_key).await?;
     let pem = Pem::new(tag, key_contents);
     Ok(encode(&pem).as_bytes().to_vec())
 }
@@ -153,7 +185,7 @@ pub(crate) async fn export_ec_key_pem(format: &str, public_key: &CryptoKey) -> J
 pub(crate) async fn fingerprint_public_ec_key(
     public_key: &CryptoKey,
 ) -> JsResult<[u8; FINGERPRINT_SIZE]> {
-    let public_key_bytes = export_ec_key_der("raw", public_key).await?;
+    let public_key_bytes = export_ec_key_der(EcKeyExportFormat::Raw, public_key).await?;
 
     // Note (amiller68): This only works for P-384 keys
     let size = 49;
