@@ -8,7 +8,7 @@ use crate::key_seal::KeySealError;
 pub struct EcSignatureKey(pub(crate) PKey<Private>);
 
 #[async_trait(?Send)]
-impl ApiPrivateKey for EcEncryptionKey {
+impl ApiPrivateKey for EcSignatureKey {
     type Error = KeySealError;
     type PublicKey = EcPublicSignatureKey;
 

@@ -121,36 +121,6 @@ mod tests {
         Ok(())
     }
 
-    async fn test_signature_key_roundtripping() -> Result<(), KeySealError> {
-        use crate::key_seal::common::{ApiPrivateKey, ApiPublicKey};
-
-        let key = EcSignatureKey::generate().await?;
-        let public_key = key.public_key()?;
-
-        // dirty comparisons but works for now
-        let raw_key_bytes = key.export_bytes().await?;
-        let imported_key = EcSignatureKey::import_bytes(&raw_key_bytes).await?;
-        let reexported_key_bytes = imported_key.export_bytes().await?;
-        assert_eq!(raw_key_bytes, reexported_key_bytes);
-
-        let raw_public_key_bytes = public_key.export_bytes().await?;
-        let imported_public_key = EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
-        let reexported_public_key_bytes = imported_public_key.export_bytes().await?;
-        assert_eq!(raw_public_key_bytes, reexported_public_key_bytes);
-
-        let raw_key_pem = key.export().await?;
-        let imported_key = EcSignatureKey::import(&raw_key_pem).await?;
-        let reexported_key_pem = imported_key.export().await?;
-        assert_eq!(raw_key_pem, reexported_key_pem);
-
-        let raw_public_key_pem = public_key.export().await?;
-        let imported_public_key = EcPublicSignatureKey::import(&raw_public_key_pem).await?;
-        let reexported_public_key_pem = imported_public_key.export().await?;
-        assert_eq!(raw_public_key_pem, reexported_public_key_pem);
-
-        Ok(())
-    }
-
     #[cfg(not(target_arch = "wasm32"))]
     mod native_tests {
         use super::*;
@@ -203,6 +173,37 @@ mod tests {
         use wasm_bindgen_test::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
+
+        async fn test_signature_key_roundtripping() -> Result<(), KeySealError> {
+            use crate::key_seal::common::{ApiPrivateKey, ApiPublicKey};
+
+            let key = EcSignatureKey::generate().await?;
+            let public_key = key.public_key()?;
+
+            // dirty comparisons but works for now
+            let raw_key_bytes = key.export_bytes().await?;
+            let imported_key = EcSignatureKey::import_bytes(&raw_key_bytes).await?;
+            let reexported_key_bytes = imported_key.export_bytes().await?;
+            assert_eq!(raw_key_bytes, reexported_key_bytes);
+
+            let raw_public_key_bytes = public_key.export_bytes().await?;
+            let imported_public_key =
+                EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
+            let reexported_public_key_bytes = imported_public_key.export_bytes().await?;
+            assert_eq!(raw_public_key_bytes, reexported_public_key_bytes);
+
+            let raw_key_pem = key.export().await?;
+            let imported_key = EcSignatureKey::import(&raw_key_pem).await?;
+            let reexported_key_pem = imported_key.export().await?;
+            assert_eq!(raw_key_pem, reexported_key_pem);
+
+            let raw_public_key_pem = public_key.export().await?;
+            let imported_public_key = EcPublicSignatureKey::import(&raw_public_key_pem).await?;
+            let reexported_public_key_pem = imported_public_key.export().await?;
+            assert_eq!(raw_public_key_pem, reexported_public_key_pem);
+
+            Ok(())
+        }
 
         #[wasm_bindgen_test]
         async fn encryption_end_to_end() -> Result<(), KeySealError> {
