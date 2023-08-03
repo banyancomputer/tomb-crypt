@@ -14,10 +14,9 @@ pub const FINGERPRINT_SIZE: usize = 20;
 /// Number of bytes used for our salts and IVs
 pub const SALT_SIZE: usize = 16;
 
-/// A trait for wrapping a private key in a PKCS8 format.
-#[async_trait(?Send)]
 /// A WrappingPrivateKey is an opinionated cryptographic type designed for encrypting and
 /// decrypting (wrapping) a symmetric AES key using an EC group key.
+#[async_trait(?Send)]
 pub trait WrappingPrivateKey: Sized {
     /// The error type that will commonly be returned by all concrete implementations of the type.
     type Error: Error;
@@ -66,6 +65,73 @@ pub trait WrappingPublicKey: Sized {
     type Error: Error;
 
     /// Converts the public portion of the wrapping key into a PEM/SPKI formatted version that is
+    /// easy to exchange in a visibly identifiable way and works over ASCII only channels.
+    async fn export(&self) -> Result<Vec<u8>, Self::Error>;
+
+    /// Exports the public portion of a private key as a DER formatted byte string. Preferred when
+    /// exchanging and embedding in formats that will already be encoded using other means.
+    async fn export_bytes(&self) -> Result<Vec<u8>, Self::Error>;
+
+    /// Generates a SHA1 over the standardized compressed form representation of an EC key. This is
+    /// usually presented to users by running it through the prettifier
+    /// [`crate::key_seal::pretty_fingerprint()`].
+    async fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], Self::Error>;
+
+    /// IMPORT A STANDARD PEM FORMATTED VERSION OF AN EC KEY.
+    async fn import(pem_bytes: &[u8]) -> Result<Self, Self::Error>;
+
+    /// Import a standard DER formatted EC key byte string
+    async fn import_bytes(der_bytes: &[u8]) -> Result<Self, Self::Error>;
+}
+
+/// An ApiKey is a key that is used to sign API requests to the server.
+#[async_trait(?Send)]
+pub trait ApiPrivateKey: Sized {
+    /// The error type that will commonly be returned by all concrete implementations of the type.
+    type Error: Error;
+
+    /// This is the type that will constitute the public portion of this concrete implementation.
+    type PublicKey: ApiPublicKey<Error = Self::Error>;
+
+    /// Converts the private key representation into a PEM wrapped PKCS8 private key. The returned
+    /// bytes should all be printable UTF8 characters which can be turned into a string on demand.
+    ///
+    /// This format should be preferred if the data is going to be visible to people or platforms
+    /// as it is immediately recognizable.
+    async fn export(&self) -> Result<Vec<u8>, Self::Error>;
+
+    /// Export the internal private key into a DER encoded set of bytes.
+    async fn export_bytes(&self) -> Result<Vec<u8>, Self::Error>;
+
+    /// Create a standards compliant SHA1 fingerprint of the associated public key encoded as a
+    /// fixed length bytes string. This is usually presented to users by running it through the
+    /// prettifier [`crate::key_seal::pretty_fingerprint()`].
+    async fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], Self::Error> {
+        self.public_key()?.fingerprint().await
+    }
+
+    /// Creates a secure new private key matching the security and use requirements for use as a EC
+    /// wrapping key.
+    async fn generate() -> Result<Self, Self::Error>;
+
+    /// Parses a PEM encoded EC private key into the internal type appropriate for being used as a
+    /// wrapping key.
+    async fn import(pem_bytes: &[u8]) -> Result<Self, Self::Error>;
+
+    /// Parses a DER encoded EC private key into the internal type appropriate for being used as a
+    /// wrapping key.
+    async fn import_bytes(der_bytes: &[u8]) -> Result<Self, Self::Error>;
+
+    fn public_key(&self) -> Result<Self::PublicKey, Self::Error>;
+}
+
+/// The public portion of an ApiKey. This is the portion that is used to verify the signature of JWTs.
+#[async_trait(?Send)]
+pub trait ApiPublicKey: Sized {
+    /// The error type that will commonly be returned by all concrete implementations of the type.
+    type Error: Error;
+
+    /// Converts the public portion of the api key into a PEM/SPKI formatted version that is
     /// easy to exchange in a visibly identifiable way and works over ASCII only channels.
     async fn export(&self) -> Result<Vec<u8>, Self::Error>;
 

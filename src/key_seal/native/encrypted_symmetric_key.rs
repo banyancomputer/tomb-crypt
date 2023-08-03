@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 
-use crate::key_seal::common::*;
+use crate::key_seal::common::{
+    ProtectedKey, WrappingPrivateKey, WrappingPublicKey, AES_KEY_SIZE, SALT_SIZE,
+};
 use crate::key_seal::native::*;
 use crate::key_seal::{generate_info, KeySealError};
 
