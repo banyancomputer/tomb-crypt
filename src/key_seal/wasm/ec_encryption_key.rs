@@ -74,3 +74,35 @@ impl WrappingPrivateKey for EcEncryptionKey {
         Ok(EcPublicEncryptionKey(public_key.clone()))
     }
 }
+
+impl From<CryptoKey> for EcEncryptionKey {
+    fn from(private_key: CryptoKey) -> Self {
+        Self {
+            private_key,
+            public_key: None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    wasm_bindgen_test_configure!(run_in_browser);
+
+    #[wasm_bindgen_test]
+    async fn from_crypto_key() -> Result<(), KeySealError> {
+        let key_pair = internal::generate_ec_key_pair(EcKeyType::Encryption)
+            .await
+            .unwrap();
+        let private_key = internal::private_key(&key_pair);
+        let ec_encryption_key = EcEncryptionKey::from(private_key);
+        assert_eq!(ec_encryption_key.public_key, None);
+        assert_eq!(
+            ec_encryption_key.private_key,
+            internal::private_key(&key_pair)
+        );
+        Ok(())
+    }
+}
