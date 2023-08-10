@@ -10,10 +10,10 @@ use openssl::nid::Nid;
 use openssl::pkey::{PKey, Private, Public};
 
 use crate::key_seal::common::{AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE};
-use crate::key_seal::native::KeySealError;
+use crate::key_seal::native::TombCryptError;
 
-pub(crate) fn base64_decode(data: &str) -> Result<Vec<u8>, KeySealError> {
-    B64.decode(data).map_err(KeySealError::bad_base64)
+pub(crate) fn base64_decode(data: &str) -> Result<Vec<u8>, TombCryptError> {
+    B64.decode(data).map_err(TombCryptError::bad_base64)
 }
 
 pub(crate) fn base64_encode(data: &[u8]) -> String {
@@ -25,18 +25,23 @@ fn ec_group() -> EcGroup {
         .expect("openssl support of the EC group to remain valid")
 }
 
+fn ec_signature_group() -> EcGroup {
+    EcGroup::from_curve_name(Nid::SECP384R1)
+        .expect("openssl support of the EC group to remain valid")
+}
+
 pub(crate) fn ecdh_exchange(
     private: &PKey<Private>,
     public: &PKey<Public>,
-) -> Result<[u8; ECDH_SECRET_BYTE_SIZE], KeySealError> {
-    let mut deriver = Deriver::new(private).map_err(KeySealError::incompatible_derivation)?;
+) -> Result<[u8; ECDH_SECRET_BYTE_SIZE], TombCryptError> {
+    let mut deriver = Deriver::new(private).map_err(TombCryptError::incompatible_derivation)?;
     deriver
         .set_peer(public)
-        .map_err(KeySealError::incompatible_derivation)?;
+        .map_err(TombCryptError::incompatible_derivation)?;
 
     let calculated_bytes = deriver
         .derive_to_vec()
-        .map_err(KeySealError::incompatible_derivation)?;
+        .map_err(TombCryptError::incompatible_derivation)?;
 
     let mut key_slice = [0u8; ECDH_SECRET_BYTE_SIZE];
     key_slice.copy_from_slice(&calculated_bytes);
@@ -65,6 +70,12 @@ pub(crate) fn fingerprint(public_key: &PKey<Public>) -> [u8; FINGERPRINT_SIZE] {
 
 pub(crate) fn generate_ec_key() -> PKey<Private> {
     let ec_group = ec_group();
+    let ec_key = EcKey::generate(&ec_group).expect("openssl private EC key generation to succeed");
+    ec_key.try_into().expect("openssl internal type conversion")
+}
+
+pub(crate) fn generate_ec_signature_key() -> PKey<Private> {
+    let ec_group = ec_signature_group();
     let ec_key = EcKey::generate(&ec_group).expect("openssl private EC key generation to succeed");
     ec_key.try_into().expect("openssl internal type conversion")
 }

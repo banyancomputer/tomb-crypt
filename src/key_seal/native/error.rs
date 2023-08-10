@@ -3,57 +3,65 @@ use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct KeySealError {
-    kind: KeySealErrorKind,
+pub struct TombCryptError {
+    kind: TombCryptErrorKind,
 }
 
-impl KeySealError {
+impl TombCryptError {
     pub(crate) fn background_generation_failed(err: tokio::task::JoinError) -> Self {
         Self {
-            kind: KeySealErrorKind::BackgroundGenerationFailed(err),
+            kind: TombCryptErrorKind::BackgroundGenerationFailed(err),
         }
     }
 
     pub(crate) fn bad_format(err: openssl::error::ErrorStack) -> Self {
         Self {
-            kind: KeySealErrorKind::BadFormat(err),
+            kind: TombCryptErrorKind::BadFormat(err),
         }
     }
 
     pub(crate) fn bad_base64(err: base64::DecodeError) -> Self {
         Self {
-            kind: KeySealErrorKind::InvalidBase64(err),
+            kind: TombCryptErrorKind::InvalidBase64(err),
         }
     }
 
     pub(crate) fn export_failed(err: openssl::error::ErrorStack) -> Self {
         Self {
-            kind: KeySealErrorKind::ExportFailed(err),
+            kind: TombCryptErrorKind::ExportFailed(err),
         }
     }
 
     pub(crate) fn incompatible_derivation(err: openssl::error::ErrorStack) -> Self {
         Self {
-            kind: KeySealErrorKind::IncompatibleDerivationKey(err),
+            kind: TombCryptErrorKind::IncompatibleDerivationKey(err),
         }
     }
 
     pub(crate) fn jwt_error(err: SimpleJwtError) -> Self {
         Self {
-            kind: KeySealErrorKind::JwtError(err),
+            kind: TombCryptErrorKind::JwtError(err),
+        }
+    }
+
+    pub(crate) fn invalid_utf8(err: std::str::Utf8Error) -> Self {
+        Self {
+            kind: TombCryptErrorKind::InvalidUtf8(err),
         }
     }
 }
 
-impl Display for KeySealError {
+impl Display for TombCryptError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use KeySealErrorKind::*;
+        use TombCryptErrorKind::*;
 
         let msg = match &self.kind {
             BackgroundGenerationFailed(_) => "unable to background key generation",
             BadFormat(_) => "imported key was malformed",
             ExportFailed(_) => "attempt to export key was rejected by underlying library",
             JwtError(_) => "jwt error",
+            InvalidBase64(_) => "invalid base64",
+            InvalidUtf8(_) => "invalid utf8",
             _ => "placeholder",
         };
 
@@ -61,15 +69,16 @@ impl Display for KeySealError {
     }
 }
 
-impl std::error::Error for KeySealError {
+impl std::error::Error for TombCryptError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        use KeySealErrorKind::*;
+        use TombCryptErrorKind::*;
 
         match &self.kind {
             BackgroundGenerationFailed(err) => Some(err),
             BadFormat(err) => Some(err),
             ExportFailed(err) => Some(err),
             JwtError(err) => err.source(),
+            InvalidUtf8(err) => Some(err),
             _ => None,
         }
     }
@@ -77,11 +86,12 @@ impl std::error::Error for KeySealError {
 
 #[derive(Debug)]
 #[non_exhaustive]
-enum KeySealErrorKind {
+enum TombCryptErrorKind {
     BackgroundGenerationFailed(tokio::task::JoinError),
     BadFormat(openssl::error::ErrorStack),
     ExportFailed(openssl::error::ErrorStack),
     InvalidBase64(base64::DecodeError),
     IncompatibleDerivationKey(openssl::error::ErrorStack),
     JwtError(SimpleJwtError),
+    InvalidUtf8(std::str::Utf8Error),
 }

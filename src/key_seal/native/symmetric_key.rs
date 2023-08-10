@@ -1,21 +1,21 @@
 use async_trait::async_trait;
 
-use crate::key_seal::common::{PlainKey, WrappingPrivateKey, WrappingPublicKey, AES_KEY_SIZE};
+use crate::key_seal::common::{PlainKey, PrivateKey, PublicKey, AES_KEY_SIZE};
 use crate::key_seal::native::*;
-use crate::key_seal::{generate_info, KeySealError};
+use crate::key_seal::{generate_info, TombCryptError};
 
 pub struct SymmetricKey(pub(crate) [u8; AES_KEY_SIZE]);
 
 #[async_trait(?Send)]
 impl PlainKey for SymmetricKey {
-    type Error = KeySealError;
+    type Error = TombCryptError;
     type ProtectedKey = EncryptedSymmetricKey;
-    type WrappingPublicKey = EcPublicEncryptionKey;
+    type PublicKey = EcPublicEncryptionKey;
 
     async fn encrypt_for(
         &self,
-        recipient_key: &Self::WrappingPublicKey,
-    ) -> Result<Self::ProtectedKey, KeySealError> {
+        recipient_key: &Self::PublicKey,
+    ) -> Result<Self::ProtectedKey, TombCryptError> {
         let ephemeral_key = EcEncryptionKey::generate().await?;
 
         let ecdh_shared_secret = internal::ecdh_exchange(&ephemeral_key.0, &recipient_key.0)?;

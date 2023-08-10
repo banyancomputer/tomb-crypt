@@ -1,10 +1,8 @@
 use async_trait::async_trait;
 
-use crate::key_seal::common::{
-    ProtectedKey, WrappingPrivateKey, WrappingPublicKey, AES_KEY_SIZE, SALT_SIZE,
-};
+use crate::key_seal::common::{PrivateKey, ProtectedKey, PublicKey, AES_KEY_SIZE, SALT_SIZE};
 use crate::key_seal::native::*;
-use crate::key_seal::{generate_info, KeySealError};
+use crate::key_seal::{generate_info, TombCryptError};
 
 pub struct EncryptedSymmetricKey {
     pub(crate) data: [u8; AES_KEY_SIZE + 8],
@@ -14,14 +12,14 @@ pub struct EncryptedSymmetricKey {
 
 #[async_trait(?Send)]
 impl ProtectedKey for EncryptedSymmetricKey {
-    type Error = KeySealError;
+    type Error = TombCryptError;
     type PlainKey = SymmetricKey;
-    type WrappingPrivateKey = EcEncryptionKey;
+    type PrivateKey = EcEncryptionKey;
 
     async fn decrypt_with(
         &self,
         recipient_key: &EcEncryptionKey,
-    ) -> Result<SymmetricKey, KeySealError> {
+    ) -> Result<SymmetricKey, TombCryptError> {
         let ephemeral_public_key =
             EcPublicEncryptionKey::import_bytes(self.public_key.as_ref()).await?;
         let ecdh_shared_secret =
@@ -48,7 +46,7 @@ impl ProtectedKey for EncryptedSymmetricKey {
         .join(".")
     }
 
-    fn import(serialized: &str) -> Result<Self, KeySealError> {
+    fn import(serialized: &str) -> Result<Self, TombCryptError> {
         let components: Vec<_> = serialized.split('.').collect();
 
         let raw_salt = internal::base64_decode(components[0])?;

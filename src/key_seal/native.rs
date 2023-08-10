@@ -12,5 +12,5 @@ pub use ec_public_encryption_key::EcPublicEncryptionKey;
 pub use ec_public_signature_key::EcPublicSignatureKey;
 pub use ec_signature_key::EcSignatureKey;
 pub use encrypted_symmetric_key::EncryptedSymmetricKey;
-pub use error::KeySealError;
+pub use error::TombCryptError;
 pub use symmetric_key::SymmetricKey;

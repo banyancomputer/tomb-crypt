@@ -6,6 +6,6 @@ pub mod prelude {
     pub use crate::key_seal::common::*;
     pub use crate::key_seal::{
         EcEncryptionKey, EcPublicEncryptionKey, EcPublicSignatureKey, EcSignatureKey,
-        EncryptedSymmetricKey, KeySealError, SymmetricKey,
+        EncryptedSymmetricKey, SymmetricKey, TombCryptError,
     };
 }

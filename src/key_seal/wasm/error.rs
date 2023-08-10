@@ -5,26 +5,26 @@ use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct KeySealError {
-    kind: KeySealErrorKind,
+pub struct TombCryptError {
+    kind: TombCryptErrorKind,
 }
 
-impl KeySealError {
+impl TombCryptError {
     pub(crate) fn crypto_unavailable(err: JsError) -> Self {
         Self {
-            kind: KeySealErrorKind::CryptoUnavailable(err),
+            kind: TombCryptErrorKind::CryptoUnavailable(err),
         }
     }
 
     pub(crate) fn subtle_crypto_error(err: JsError) -> Self {
         Self {
-            kind: KeySealErrorKind::SubtleCryptoError(err),
+            kind: TombCryptErrorKind::SubtleCryptoError(err),
         }
     }
 
     pub(crate) fn public_key_unavailable() -> Self {
         Self {
-            kind: KeySealErrorKind::PublicKeyUnavailable(JsError::new(
+            kind: TombCryptErrorKind::PublicKeyUnavailable(JsError::new(
                 "public key was not imported",
             )),
         }
@@ -32,31 +32,36 @@ impl KeySealError {
 
     pub(crate) fn bad_format(err: JsError) -> Self {
         Self {
-            kind: KeySealErrorKind::BadFormat(err),
+            kind: TombCryptErrorKind::BadFormat(err),
         }
     }
 
     pub(crate) fn bad_base64(err: DecodeError) -> Self {
         Self {
-            kind: KeySealErrorKind::InvalidBase64(err),
+            kind: TombCryptErrorKind::InvalidBase64(err),
         }
     }
 
     pub(crate) fn export_failed(err: JsError) -> Self {
         Self {
-            kind: KeySealErrorKind::ExportFailed(err),
+            kind: TombCryptErrorKind::ExportFailed(err),
         }
     }
     pub(crate) fn jwt_error(err: SimpleJwtError) -> Self {
         Self {
-            kind: KeySealErrorKind::JwtError(err),
+            kind: TombCryptErrorKind::JwtError(err),
+        }
+    }
+    pub(crate) fn invalid_utf8(err: std::str::Utf8Error) -> Self {
+        Self {
+            kind: TombCryptErrorKind::InvalidUtf8(err),
         }
     }
 }
 
-impl Display for KeySealError {
+impl Display for TombCryptError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use KeySealErrorKind::*;
+        use TombCryptErrorKind::*;
 
         match &self.kind {
             CryptoUnavailable(err) => {
@@ -87,13 +92,17 @@ impl Display for KeySealError {
                 let msg = err.to_string();
                 write!(f, "jwt error: {msg}")
             }
+            InvalidUtf8(err) => {
+                let msg = err.to_string();
+                write!(f, "invalid utf8: {msg}")
+            }
         }
     }
 }
 
-impl From<KeySealError> for JsError {
-    fn from(err: KeySealError) -> Self {
-        use KeySealErrorKind::*;
+impl From<TombCryptError> for JsError {
+    fn from(err: TombCryptError) -> Self {
+        use TombCryptErrorKind::*;
 
         match err.kind {
             CryptoUnavailable(err) => err,
@@ -103,21 +112,22 @@ impl From<KeySealError> for JsError {
             ExportFailed(err) => err,
             JwtError(err) => JsError::new(&err.to_string()),
             InvalidBase64(err) => JsError::new(&err.to_string()),
+            InvalidUtf8(err) => JsError::new(&err.to_string()),
         }
     }
 }
 
-impl From<JsError> for KeySealError {
+impl From<JsError> for TombCryptError {
     fn from(err: JsError) -> Self {
         Self::subtle_crypto_error(err)
     }
 }
 
-impl std::error::Error for KeySealError {}
+impl std::error::Error for TombCryptError {}
 
 #[derive(Debug)]
 #[non_exhaustive]
-enum KeySealErrorKind {
+enum TombCryptErrorKind {
     CryptoUnavailable(JsError),
     SubtleCryptoError(JsError),
     PublicKeyUnavailable(JsError),
@@ -125,4 +135,5 @@ enum KeySealErrorKind {
     ExportFailed(JsError),
     JwtError(SimpleJwtError),
     InvalidBase64(DecodeError),
+    InvalidUtf8(std::str::Utf8Error),
 }
