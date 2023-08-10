@@ -187,6 +187,83 @@ impl ApiToken {
                 ),
         )
     }
+
+    /// Get the audience for the token
+    /// # Returns
+    /// The audience for the token
+    /// # Errors
+    /// If the audience is not a set
+    pub fn aud(&self) -> Result<&str, TombCryptError> {
+        let auds = self
+            .0
+            .audiences
+            .as_ref()
+            .ok_or_else(|| TombCryptError::jwt_missing_claims("audience"))?;
+        let aud = match auds {
+            Audiences::AsSet(aud) => aud
+                .iter()
+                .next()
+                .ok_or_else(|| TombCryptError::jwt_missing_claims("audience"))?,
+            Audiences::AsString(aud) => aud,
+        };
+        Ok(aud)
+    }
+
+    /// Get the subject for the token
+    /// # Returns
+    /// The subject for the token
+    /// # Errors
+    /// If the subject is not set
+    pub fn sub(&self) -> Result<&str, TombCryptError> {
+        let sub = self
+            .0
+            .subject
+            .as_ref()
+            .ok_or_else(|| TombCryptError::jwt_missing_claims("subject"))?;
+        Ok(sub)
+    }
+
+    /// Get the nonce for the token
+    /// # Returns
+    /// The nonce for the token
+    /// # Errors
+    /// If the nonce is not set
+    pub fn nnc(&self) -> Result<&str, TombCryptError> {
+        let nonce = self
+            .0
+            .nonce
+            .as_ref()
+            .ok_or_else(|| TombCryptError::jwt_missing_claims("nonce"))?;
+        Ok(nonce)
+    }
+
+    /// Get when the token expires
+    /// # Returns
+    /// When the token expires
+    /// # Errors
+    /// If the expiration is not set
+    pub fn exp(&self) -> Result<u64, TombCryptError> {
+        let exp = self
+            .0
+            .expires_at
+            .as_ref()
+            .ok_or_else(|| TombCryptError::jwt_missing_claims("expiration"))?;
+        Ok(exp.as_secs())
+    }
+
+    /// Get when the token is invalid before
+    /// # Returns
+    /// When the token is invalid before
+    /// # Errors
+    /// If the invalid before is not set
+    pub fn nbf(&self) -> Result<u64, TombCryptError> {
+        let nbf = self
+            .0
+            .invalid_before
+            .as_ref()
+            .ok_or_else(|| TombCryptError::jwt_missing_claims("not before"))?;
+        Ok(nbf.as_secs())
+    }
 }
 
 impl TryFrom<String> for ApiTokenMetadata {

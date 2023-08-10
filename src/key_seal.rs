@@ -133,6 +133,9 @@ mod tests {
         let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
 
         assert_eq!(metadata.0.key_id().unwrap(), key_id);
+        assert!(claims.nbf()? < claims.exp()?);
+        assert_eq!(claims.aud()?, "test");
+        assert_eq!(claims.sub()?, "test");
 
         Ok(())
     }

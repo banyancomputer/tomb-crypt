@@ -52,6 +52,11 @@ impl TombCryptError {
             kind: TombCryptErrorKind::JwtError(err),
         }
     }
+    pub(crate) fn jwt_missing_claims(claim: &str) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtMissingClaims(claim.to_string()),
+        }
+    }
     pub(crate) fn invalid_utf8(err: std::str::Utf8Error) -> Self {
         Self {
             kind: TombCryptErrorKind::InvalidUtf8(err),
@@ -96,6 +101,9 @@ impl Display for TombCryptError {
                 let msg = err.to_string();
                 write!(f, "invalid utf8: {msg}")
             }
+            JwtMissingClaims(claim) => {
+                write!(f, "missing jwt claim: {claim}")
+            }
         }
     }
 }
@@ -113,6 +121,7 @@ impl From<TombCryptError> for JsError {
             JwtError(err) => JsError::new(&err.to_string()),
             InvalidBase64(err) => JsError::new(&err.to_string()),
             InvalidUtf8(err) => JsError::new(&err.to_string()),
+            JwtMissingClaims(claim) => JsError::new(&format!("missing jwt claim: {claim}")),
         }
     }
 }
@@ -134,6 +143,7 @@ enum TombCryptErrorKind {
     BadFormat(JsError),
     ExportFailed(JsError),
     JwtError(SimpleJwtError),
+    JwtMissingClaims(String),
     InvalidBase64(DecodeError),
     InvalidUtf8(std::str::Utf8Error),
 }

@@ -44,6 +44,12 @@ impl TombCryptError {
         }
     }
 
+    pub(crate) fn jwt_missing_claims(claim: &str) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtMissingClaims(claim.to_string()),
+        }
+    }
+
     pub(crate) fn invalid_utf8(err: std::str::Utf8Error) -> Self {
         Self {
             kind: TombCryptErrorKind::InvalidUtf8(err),
@@ -93,5 +99,6 @@ enum TombCryptErrorKind {
     InvalidBase64(base64::DecodeError),
     IncompatibleDerivationKey(openssl::error::ErrorStack),
     JwtError(SimpleJwtError),
+    JwtMissingClaims(String),
     InvalidUtf8(std::str::Utf8Error),
 }
