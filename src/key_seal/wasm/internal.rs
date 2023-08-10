@@ -12,7 +12,6 @@ use web_sys::{
     CryptoKey, CryptoKeyPair, EcKeyGenParams, EcdhKeyDeriveParams, HkdfParams, SubtleCrypto,
 };
 
-use crate::key_seal::common::ApiToken;
 use crate::key_seal::common::{AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE};
 use crate::key_seal::wasm::TombCryptError;
 
@@ -468,18 +467,6 @@ pub(crate) fn base64_decode(data: &str) -> Result<Vec<u8>, TombCryptError> {
 
 pub(crate) fn base64_encode(data: &[u8]) -> String {
     B64.encode(data)
-}
-
-impl From<ApiToken> for JsValue {
-    fn from(token: ApiToken) -> Self {
-        serde_wasm_bindgen::to_value(&token).expect("api token to be serializable")
-    }
-}
-
-impl From<JsValue> for ApiToken {
-    fn from(value: JsValue) -> Self {
-        serde_wasm_bindgen::from_value(value).expect("api token to be deserializable")
-    }
 }
 
 #[cfg(test)]
