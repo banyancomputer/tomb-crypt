@@ -1,3 +1,4 @@
+use jwt_simple::Error as SimpleJwtError;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
@@ -36,6 +37,12 @@ impl KeySealError {
             kind: KeySealErrorKind::IncompatibleDerivationKey(err),
         }
     }
+
+    pub(crate) fn jwt_error(err: SimpleJwtError) -> Self {
+        Self {
+            kind: KeySealErrorKind::JwtError(err),
+        }
+    }
 }
 
 impl Display for KeySealError {
@@ -46,6 +53,7 @@ impl Display for KeySealError {
             BackgroundGenerationFailed(_) => "unable to background key generation",
             BadFormat(_) => "imported key was malformed",
             ExportFailed(_) => "attempt to export key was rejected by underlying library",
+            JwtError(_) => "jwt error",
             _ => "placeholder",
         };
 
@@ -61,6 +69,7 @@ impl std::error::Error for KeySealError {
             BackgroundGenerationFailed(err) => Some(err),
             BadFormat(err) => Some(err),
             ExportFailed(err) => Some(err),
+            JwtError(err) => err.source(),
             _ => None,
         }
     }
@@ -74,4 +83,5 @@ enum KeySealErrorKind {
     ExportFailed(openssl::error::ErrorStack),
     InvalidBase64(base64::DecodeError),
     IncompatibleDerivationKey(openssl::error::ErrorStack),
+    JwtError(SimpleJwtError),
 }

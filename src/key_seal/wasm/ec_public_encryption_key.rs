@@ -46,3 +46,9 @@ impl WrappingPublicKey for EcPublicEncryptionKey {
         Ok(Self(public_key))
     }
 }
+
+impl From<CryptoKey> for EcPublicEncryptionKey {
+    fn from(public_key: CryptoKey) -> Self {
+        Self(public_key)
+    }
+}

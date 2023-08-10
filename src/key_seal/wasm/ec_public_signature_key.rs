@@ -46,3 +46,9 @@ impl ApiPublicKey for EcPublicSignatureKey {
         Ok(Self(public_key))
     }
 }
+
+impl From<CryptoKey> for EcPublicSignatureKey {
+    fn from(public_key: CryptoKey) -> Self {
+        Self(public_key)
+    }
+}

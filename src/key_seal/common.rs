@@ -1,5 +1,9 @@
 use async_trait::async_trait;
+use jwt_simple::prelude::*;
 use std::error::Error;
+
+use crate::prelude::*;
+use crate::pretty_fingerprint;
 
 /// Number of bytes used for our AES keys (256-bit)
 pub const AES_KEY_SIZE: usize = 32;
@@ -13,6 +17,9 @@ pub const FINGERPRINT_SIZE: usize = 20;
 
 /// Number of bytes used for our salts and IVs
 pub const SALT_SIZE: usize = 16;
+
+/// The number of seconds JWTs are valid for
+pub const JWT_DURATION: u64 = 870;
 
 /// A WrappingPrivateKey is an opinionated cryptographic type designed for encrypting and
 /// decrypting (wrapping) a symmetric AES key using an EC group key.
@@ -200,3 +207,85 @@ pub trait ProtectedKey: Sized {
     /// Import protected key from the standardized format
     fn import(serialized: &str) -> Result<Self, Self::Error>;
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ApiToken(pub(crate) JWTClaims<NoCustomClaims>);
+
+impl ApiToken {
+    /// Create a new token
+    /// # Arguments
+    /// * `audience` - The audience for the token
+    /// * `subject` - The subject for the token
+    /// # Returns
+    /// A new JsonWebToken
+    pub fn new(audience: String, subject: String) -> Self {
+        Self(
+            Claims::create(Duration::from_secs(JWT_DURATION))
+                .with_audience(audience)
+                .with_subject(subject),
+        )
+    }
+
+    // Parse the string as a token to verify
+    pub async fn decode_from<'a, E>(
+        token: &str,
+        public_key: impl ApiPublicKey<Error = E>,
+    ) -> Result<Self, Box<dyn std::error::Error + 'a>>
+    where
+        E: std::error::Error + 'a,
+    {
+        let key_bytes = public_key.export_bytes().await?;
+        let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
+        let decoding_key = ES384PublicKey::from_der(&key_bytes)
+            .map_err(KeySealError::jwt_error)?
+            .with_key_id(&key_id);
+
+        let token = decoding_key
+            .verify_token::<NoCustomClaims>(token, None)
+            .map_err(KeySealError::jwt_error)?;
+
+        Ok(Self(token))
+    }
+
+    // Parse the string as an encoded token
+    pub async fn encode<'a, E>(
+        &self,
+        signing_key: impl ApiPrivateKey<Error = E>,
+    ) -> Result<String, Box<dyn std::error::Error + 'a>>
+    where
+        E: std::error::Error + 'a,
+    {
+        let key_bytes = signing_key.export_bytes().await?;
+        let key_id = pretty_fingerprint(&signing_key.fingerprint().await?);
+        let encoding_key = ES384KeyPair::from_der(&key_bytes)
+            .map_err(KeySealError::jwt_error)?
+            .with_key_id(&key_id);
+        let claims = &self.0;
+        let token = encoding_key
+            .sign::<NoCustomClaims>(claims.clone())
+            .map_err(KeySealError::jwt_error)?;
+        Ok(token)
+    }
+}
+
+// /// A wrapper trait around a JWT token that can be used to authenticate API requests.
+// #[async_trait(?Send)]
+// pub trait ApiToken: Sized {
+//     /// The error type that will commonly be returned by all concrete implementations of the type.
+//     type Error: Error;
+
+//     /// The concrete implementation of a private key that is capable of decrypting this protected
+//     /// key.
+//     type ApiPrivateKey: ApiPrivateKey;
+
+//     /// The concrete implementation of a private key that is capable of decrypting this protected
+//     /// key.
+//     type ApiPublicKey: ApiPublicKey;
+
+//     /// Attempts to decode the JWT with the provided public key. Errors if the signature is invalid
+//     async fn decode_from(token: &str, sender_key: &Self::ApiPublicKey)
+//         -> Result<Self, Self::Error>;
+
+//     /// Attempts to encode the JWT with the provided private key.
+//     async fn encode(&self, sender_key: &Self::ApiPrivateKey) -> Result<String, Self::Error>;
+// }

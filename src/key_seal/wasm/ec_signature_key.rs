@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use web_sys::CryptoKey;
+use web_sys::{CryptoKey, CryptoKeyPair};
 
 use crate::key_seal::common::{ApiPrivateKey, ApiPublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::wasm::internal::{EcKeyExportFormat, EcKeyType};
@@ -72,5 +72,23 @@ impl ApiPrivateKey for EcSignatureKey {
             .as_ref()
             .ok_or(KeySealError::public_key_unavailable())?;
         Ok(EcPublicSignatureKey(public_key.clone()))
+    }
+}
+
+impl From<CryptoKey> for EcSignatureKey {
+    fn from(private_key: CryptoKey) -> Self {
+        Self {
+            private_key,
+            public_key: None,
+        }
+    }
+}
+
+impl From<CryptoKeyPair> for EcSignatureKey {
+    fn from(key_pair: CryptoKeyPair) -> Self {
+        Self {
+            private_key: internal::private_key(&key_pair),
+            public_key: Some(internal::public_key(&key_pair)),
+        }
     }
 }

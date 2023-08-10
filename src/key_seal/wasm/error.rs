@@ -1,5 +1,6 @@
 use base64::DecodeError;
 use js_sys::Error as JsError;
+use jwt_simple::Error as SimpleJwtError;
 use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
@@ -46,6 +47,11 @@ impl KeySealError {
             kind: KeySealErrorKind::ExportFailed(err),
         }
     }
+    pub(crate) fn jwt_error(err: SimpleJwtError) -> Self {
+        Self {
+            kind: KeySealErrorKind::JwtError(err),
+        }
+    }
 }
 
 impl Display for KeySealError {
@@ -77,6 +83,10 @@ impl Display for KeySealError {
                 let msg = err.to_string();
                 write!(f, "invalid base64: {msg}")
             }
+            JwtError(err) => {
+                let msg = err.to_string();
+                write!(f, "jwt error: {msg}")
+            }
         }
     }
 }
@@ -91,6 +101,7 @@ impl From<KeySealError> for JsError {
             PublicKeyUnavailable(err) => err,
             BadFormat(err) => err,
             ExportFailed(err) => err,
+            JwtError(err) => JsError::new(&err.to_string()),
             InvalidBase64(err) => JsError::new(&err.to_string()),
         }
     }
@@ -112,5 +123,6 @@ enum KeySealErrorKind {
     PublicKeyUnavailable(JsError),
     BadFormat(JsError),
     ExportFailed(JsError),
+    JwtError(SimpleJwtError),
     InvalidBase64(DecodeError),
 }

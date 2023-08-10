@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use web_sys::CryptoKey;
+use web_sys::{CryptoKey, CryptoKeyPair};
 
 use crate::key_seal::common::{WrappingPrivateKey, WrappingPublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::wasm::internal::{EcKeyExportFormat, EcKeyType};
@@ -80,6 +80,15 @@ impl From<CryptoKey> for EcEncryptionKey {
         Self {
             private_key,
             public_key: None,
+        }
+    }
+}
+
+impl From<CryptoKeyPair> for EcEncryptionKey {
+    fn from(key_pair: CryptoKeyPair) -> Self {
+        Self {
+            private_key: internal::private_key(&key_pair),
+            public_key: Some(internal::public_key(&key_pair)),
         }
     }
 }

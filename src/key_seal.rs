@@ -206,6 +206,20 @@ mod tests {
         }
 
         #[wasm_bindgen_test]
+        async fn test_signature_key_end_to_end() -> Result<(), KeySealError> {
+            use crate::key_seal::common::{ApiPrivateKey, ApiPublicKey};
+
+            let key = EcSignatureKey::generate().await?;
+            let public_key = key.public_key()?;
+
+            let message = b"hello world";
+            let signature = key.sign(message).await?;
+            assert!(public_key.verify(message, &signature).await?);
+
+            Ok(())
+        }
+
+        #[wasm_bindgen_test]
         async fn encryption_end_to_end() -> Result<(), KeySealError> {
             test_encryption_end_to_end().await
         }
