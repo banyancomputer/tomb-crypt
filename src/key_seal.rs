@@ -202,7 +202,7 @@ mod tests {
 
         #[tokio::test]
         #[should_panic]
-        async fn api_token_fail() -> () {
+        async fn api_token_fail() {
             test_api_token_fail().await.unwrap();
         }
     }
