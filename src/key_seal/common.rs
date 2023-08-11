@@ -196,14 +196,12 @@ impl ApiToken {
     /// * `private_key` - The private key to use to sign the token
     /// # Returns
     /// Self, but with a new expirations and nonce
-    pub fn refresh(
-        &self,
-    ) -> Result<Self, TombCryptError> {
+    pub fn refresh(&self) -> Result<Self, TombCryptError> {
         let audience = self.aud()?;
         let subject = self.sub()?;
         Ok(Self::new(audience.to_string(), subject.to_string()))
     }
-    
+
     /// Determine if the token is expired
     /// # Returns
     /// True if the token is expired, false otherwise
@@ -213,7 +211,7 @@ impl ApiToken {
         let exp = self.exp()?;
         Ok(exp < (chrono::Utc::now().timestamp() as u64 + JWT_LEEWAY))
     }
-    
+
     /// Get the audience for the token
     /// # Returns
     /// The audience for the token

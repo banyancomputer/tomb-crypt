@@ -108,7 +108,7 @@ impl Display for TombCryptError {
             }
             JwtMissingClaims(claim) => {
                 write!(f, "missing jwt claim: {claim}")
-            },
+            }
             JwtMissingHeaderField(field) => {
                 write!(f, "missing jwt header field: {field}")
             }
