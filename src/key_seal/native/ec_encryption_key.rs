@@ -5,6 +5,7 @@ use crate::key_seal::common::{PrivateKey, PublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::native::*;
 use crate::key_seal::TombCryptError;
 
+#[derive(Clone, Debug)]
 pub struct EcEncryptionKey(pub(crate) PKey<Private>);
 
 #[async_trait(?Send)]

@@ -6,6 +6,7 @@ use crate::key_seal::wasm::internal::{EcKeyExportFormat, EcKeyType};
 use crate::key_seal::wasm::*;
 use crate::key_seal::TombCryptError;
 
+#[derive(Clone, Debug)]
 pub struct EcSignatureKey {
     pub(crate) private_key: CryptoKey,
     pub(crate) public_key: Option<CryptoKey>,

@@ -5,6 +5,7 @@ use crate::key_seal::common::*;
 use crate::key_seal::native::*;
 use crate::key_seal::TombCryptError;
 
+#[derive(Clone, Debug)]
 pub struct EcPublicSignatureKey(pub(crate) PKey<Public>);
 
 #[async_trait(?Send)]
