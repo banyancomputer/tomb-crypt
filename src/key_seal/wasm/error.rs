@@ -62,6 +62,11 @@ impl TombCryptError {
             kind: TombCryptErrorKind::InvalidUtf8(err),
         }
     }
+    pub(crate) fn jwt_missing_header_field(field: &str) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtMissingHeaderField(field.to_string()),
+        }
+    }
 }
 
 impl Display for TombCryptError {
@@ -103,6 +108,9 @@ impl Display for TombCryptError {
             }
             JwtMissingClaims(claim) => {
                 write!(f, "missing jwt claim: {claim}")
+            },
+            JwtMissingHeaderField(field) => {
+                write!(f, "missing jwt header field: {field}")
             }
         }
     }
@@ -122,6 +130,9 @@ impl From<TombCryptError> for JsError {
             InvalidBase64(err) => JsError::new(&err.to_string()),
             InvalidUtf8(err) => JsError::new(&err.to_string()),
             JwtMissingClaims(claim) => JsError::new(&format!("missing jwt claim: {claim}")),
+            JwtMissingHeaderField(field) => {
+                JsError::new(&format!("missing jwt header field: {field}"))
+            }
         }
     }
 }
@@ -144,6 +155,7 @@ enum TombCryptErrorKind {
     ExportFailed(JsError),
     JwtError(SimpleJwtError),
     JwtMissingClaims(String),
+    JwtMissingHeaderField(String),
     InvalidBase64(DecodeError),
     InvalidUtf8(std::str::Utf8Error),
 }

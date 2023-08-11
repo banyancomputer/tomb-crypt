@@ -14,6 +14,7 @@ async-trait = "0.1.71"
 serde = "1.0.183"
 jwt-simple = { version = "0.11.6" }
 rand = "0.8.5"
+chrono = "0.4.26"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 openssl = { version = "^0.10", features = ["vendored"] }

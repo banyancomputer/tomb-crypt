@@ -132,7 +132,14 @@ mod tests {
         let metadata = ApiTokenMetadata::try_from(token)?;
         let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
 
-        assert_eq!(metadata.0.key_id().unwrap(), key_id);
+        // Check the metadata
+        assert_eq!(metadata.alg(), "ES384");
+        assert_eq!(metadata.kid()?, key_id);
+        assert_eq!(metadata.typ()?, "JWT");
+
+        // Check the claims
+        assert!(!claims.is_expired()?);
+        assert!(claims.iat()? < claims.exp()?);
         assert!(claims.nbf()? < claims.exp()?);
         assert_eq!(claims.aud()?, "test");
         assert_eq!(claims.sub()?, "test");

@@ -50,6 +50,12 @@ impl TombCryptError {
         }
     }
 
+    pub(crate) fn jwt_missing_header_field(field: &str) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtMissingHeaderField(field.to_string()),
+        }
+    }
+
     pub(crate) fn invalid_utf8(err: std::str::Utf8Error) -> Self {
         Self {
             kind: TombCryptErrorKind::InvalidUtf8(err),
@@ -66,6 +72,8 @@ impl Display for TombCryptError {
             BadFormat(_) => "imported key was malformed",
             ExportFailed(_) => "attempt to export key was rejected by underlying library",
             JwtError(_) => "jwt error",
+            JwtMissingClaims(_) => "missing jwt claims",
+            JwtMissingHeaderField(_) => "missing jwt header field",
             InvalidBase64(_) => "invalid base64",
             InvalidUtf8(_) => "invalid utf8",
             _ => "placeholder",
@@ -84,6 +92,7 @@ impl std::error::Error for TombCryptError {
             BadFormat(err) => Some(err),
             ExportFailed(err) => Some(err),
             JwtError(err) => err.source(),
+            InvalidBase64(err) => Some(err),
             InvalidUtf8(err) => Some(err),
             _ => None,
         }
@@ -100,5 +109,6 @@ enum TombCryptErrorKind {
     IncompatibleDerivationKey(openssl::error::ErrorStack),
     JwtError(SimpleJwtError),
     JwtMissingClaims(String),
+    JwtMissingHeaderField(String),
     InvalidUtf8(std::str::Utf8Error),
 }
