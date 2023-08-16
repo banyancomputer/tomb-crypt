@@ -68,8 +68,8 @@ mod tests {
 
     // this is a temporary test to ensure the end to end bits are working as expected while proper
     // tests are built
-    async fn test_encryption_end_to_end() -> Result<(), KeySealError> {
-        use crate::key_seal::common::{PlainKey, ProtectedKey, WrappingPrivateKey};
+    async fn test_encryption_end_to_end() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{PlainKey, PrivateKey, ProtectedKey};
 
         let temporal_key = SymmetricKey::from(*PLAINTEXT_SYMMETRIC_KEY);
 
@@ -90,8 +90,8 @@ mod tests {
 
     // this is a temporary test to ensure the end to end bits are working as expected while proper
     // tests are built
-    async fn test_encryption_key_roundtripping() -> Result<(), KeySealError> {
-        use crate::key_seal::common::{WrappingPrivateKey, WrappingPublicKey};
+    async fn test_encryption_key_roundtripping() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{PrivateKey, PublicKey};
 
         let key = EcEncryptionKey::generate().await?;
         let public_key = key.public_key()?;
@@ -121,12 +121,51 @@ mod tests {
         Ok(())
     }
 
+    async fn test_api_token() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{ApiToken, ApiTokenMetadata, Jwt, PrivateKey, PublicKey};
+        let key = EcSignatureKey::generate().await?;
+        let public_key = key.public_key()?;
+
+        let claims = ApiToken::new("test".to_string(), "test".to_string());
+        let token = claims.encode_to(&key).await?;
+        let _ = ApiToken::decode_from(&token, &public_key).await?;
+        let metadata = ApiTokenMetadata::try_from(token)?;
+        let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
+
+        // Check the metadata
+        assert_eq!(metadata.alg(), "ES384");
+        assert_eq!(metadata.kid()?, key_id);
+        assert_eq!(metadata.typ()?, "JWT");
+
+        // Check the claims
+        assert!(!claims.is_expired()?);
+        assert!(claims.iat()? < claims.exp()?);
+        assert!(claims.nbf()? < claims.exp()?);
+        assert_eq!(claims.aud()?, "test");
+        assert_eq!(claims.sub()?, "test");
+
+        Ok(())
+    }
+
+    async fn test_api_token_fail() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{ApiToken, Jwt, PrivateKey};
+        let key = EcSignatureKey::generate().await?;
+        let bad_key = EcSignatureKey::generate().await?;
+        let bad_public_key = bad_key.public_key()?;
+
+        let claims = ApiToken::new("test".to_string(), "test".to_string());
+        let token = claims.encode_to(&key).await?;
+        let _ = ApiToken::decode_from(&token, &bad_public_key).await?;
+
+        Ok(())
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     mod native_tests {
         use super::*;
 
-        async fn test_pem_key_parse_and_use() -> Result<(), KeySealError> {
-            use crate::key_seal::common::{ProtectedKey, WrappingPrivateKey};
+        async fn test_pem_key_parse_and_use() -> Result<(), TombCryptError> {
+            use crate::key_seal::common::{PrivateKey, ProtectedKey};
 
             let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
             let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
@@ -136,8 +175,8 @@ mod tests {
             Ok(())
         }
 
-        async fn test_der_key_parse_and_use() -> Result<(), KeySealError> {
-            use crate::key_seal::common::{ProtectedKey, WrappingPrivateKey};
+        async fn test_der_key_parse_and_use() -> Result<(), TombCryptError> {
+            use crate::key_seal::common::{PrivateKey, ProtectedKey};
 
             let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
             let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
@@ -147,23 +186,34 @@ mod tests {
         }
 
         #[tokio::test]
-        async fn pem_key_parse_and_use() -> Result<(), KeySealError> {
+        async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
             test_pem_key_parse_and_use().await
         }
 
         #[tokio::test]
-        async fn der_key_parse_and_use() -> Result<(), KeySealError> {
+        async fn der_key_parse_and_use() -> Result<(), TombCryptError> {
             test_der_key_parse_and_use().await
         }
 
         #[tokio::test]
-        async fn encryption_end_to_end() -> Result<(), KeySealError> {
+        async fn encryption_end_to_end() -> Result<(), TombCryptError> {
             test_encryption_end_to_end().await
         }
 
         #[tokio::test]
-        async fn encryption_key_roundtripping() -> Result<(), KeySealError> {
+        async fn encryption_key_roundtripping() -> Result<(), TombCryptError> {
             test_encryption_key_roundtripping().await
+        }
+
+        #[tokio::test]
+        async fn api_token() -> Result<(), TombCryptError> {
+            test_api_token().await
+        }
+
+        #[tokio::test]
+        #[should_panic]
+        async fn api_token_fail() {
+            test_api_token_fail().await.unwrap();
         }
     }
 
@@ -174,8 +224,8 @@ mod tests {
 
         wasm_bindgen_test_configure!(run_in_browser);
 
-        async fn test_signature_key_roundtripping() -> Result<(), KeySealError> {
-            use crate::key_seal::common::{ApiPrivateKey, ApiPublicKey};
+        async fn test_signature_key_roundtripping() -> Result<(), TombCryptError> {
+            use crate::key_seal::common::{PrivateKey, PublicKey};
 
             let key = EcSignatureKey::generate().await?;
             let public_key = key.public_key()?;
@@ -206,18 +256,29 @@ mod tests {
         }
 
         #[wasm_bindgen_test]
-        async fn encryption_end_to_end() -> Result<(), KeySealError> {
+        async fn encryption_end_to_end() -> Result<(), TombCryptError> {
             test_encryption_end_to_end().await
         }
 
         #[wasm_bindgen_test]
-        async fn encryption_key_roundtripping() -> Result<(), KeySealError> {
+        async fn encryption_key_roundtripping() -> Result<(), TombCryptError> {
             test_encryption_key_roundtripping().await
         }
 
         #[wasm_bindgen_test]
-        async fn signature_key_roundtripping() -> Result<(), KeySealError> {
+        async fn signature_key_roundtripping() -> Result<(), TombCryptError> {
             test_signature_key_roundtripping().await
+        }
+
+        #[wasm_bindgen_test]
+        async fn api_token() -> Result<(), TombCryptError> {
+            test_api_token().await
+        }
+
+        #[wasm_bindgen_test]
+        #[should_panic]
+        async fn api_token_fail() -> Result<(), TombCryptError> {
+            test_api_token_fail().await
         }
     }
 }

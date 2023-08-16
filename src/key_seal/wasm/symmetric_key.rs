@@ -5,20 +5,20 @@ use crate::key_seal::generate_info;
 use crate::key_seal::wasm::*;
 use crate::key_seal::EcPublicEncryptionKey;
 use crate::key_seal::EncryptedSymmetricKey;
-use crate::key_seal::KeySealError;
+use crate::key_seal::TombCryptError;
 
 pub struct SymmetricKey(pub(crate) [u8; AES_KEY_SIZE]);
 
 #[async_trait(?Send)]
 impl PlainKey for SymmetricKey {
-    type Error = KeySealError;
+    type Error = TombCryptError;
     type ProtectedKey = EncryptedSymmetricKey;
-    type WrappingPublicKey = EcPublicEncryptionKey;
+    type PublicKey = EcPublicEncryptionKey;
 
     async fn encrypt_for(
         &self,
-        recipient_key: &Self::WrappingPublicKey,
-    ) -> Result<Self::ProtectedKey, KeySealError> {
+        recipient_key: &Self::PublicKey,
+    ) -> Result<Self::ProtectedKey, TombCryptError> {
         // Generate ephemeral key pair
         let ephemeral_key_pair = EcEncryptionKey::generate().await?;
 
@@ -26,7 +26,7 @@ impl PlainKey for SymmetricKey {
         let private_key = ephemeral_key_pair.private_key.clone();
         let ec_shared_secret = internal::ec_derive_shared_secret(&private_key, &recipient_key.0)
             .await
-            .map_err(KeySealError::subtle_crypto_error)?;
+            .map_err(TombCryptError::subtle_crypto_error)?;
 
         // Derive shared key with the shared secret
         let info = generate_info(
@@ -36,7 +36,7 @@ impl PlainKey for SymmetricKey {
         let (salt, shared_key) =
             internal::hkdf_derive_aes_key(&ec_shared_secret, &info, "AES-KW", &["wrapKey"])
                 .await
-                .map_err(KeySealError::subtle_crypto_error)?;
+                .map_err(TombCryptError::subtle_crypto_error)?;
 
         // Import the symmetric key so we can wrap it
         let key = internal::aes_import_key(
@@ -81,7 +81,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[wasm_bindgen_test]
-    fn from() -> Result<(), KeySealError> {
+    fn from() -> Result<(), TombCryptError> {
         // Get random values
         let mut key = [0u8; AES_KEY_SIZE];
         internal::random_bytes(&mut key)?;
@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    fn as_ref() -> Result<(), KeySealError> {
+    fn as_ref() -> Result<(), TombCryptError> {
         // Get random values
         let mut key = [0u8; AES_KEY_SIZE];
         internal::random_bytes(&mut key)?;
@@ -101,7 +101,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    async fn encrypt_for() -> Result<(), KeySealError> {
+    async fn encrypt_for() -> Result<(), TombCryptError> {
         // Get random values
         let mut key = [0u8; AES_KEY_SIZE];
         internal::random_bytes(&mut key)?;

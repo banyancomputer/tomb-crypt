@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::key_seal::common::*;
 use crate::key_seal::generate_info;
 use crate::key_seal::wasm::*;
-use crate::key_seal::KeySealError;
+use crate::key_seal::TombCryptError;
 
 pub struct EncryptedSymmetricKey {
     pub(crate) data: [u8; AES_KEY_SIZE + 8],
@@ -13,20 +13,20 @@ pub struct EncryptedSymmetricKey {
 
 #[async_trait(?Send)]
 impl ProtectedKey for EncryptedSymmetricKey {
-    type Error = KeySealError;
+    type Error = TombCryptError;
     type PlainKey = SymmetricKey;
-    type WrappingPrivateKey = EcEncryptionKey;
+    type PrivateKey = EcEncryptionKey;
 
     async fn decrypt_with(
         &self,
         recipient_key: &EcEncryptionKey,
-    ) -> Result<SymmetricKey, KeySealError> {
+    ) -> Result<SymmetricKey, TombCryptError> {
         let ephemeral_public_key =
             EcPublicEncryptionKey::import_bytes(self.public_key.as_ref()).await?;
         let ec_shared_secret =
             internal::ec_derive_shared_secret(&recipient_key.private_key, &ephemeral_public_key.0)
                 .await
-                .map_err(KeySealError::subtle_crypto_error)?;
+                .map_err(TombCryptError::subtle_crypto_error)?;
 
         let info = generate_info(
             ephemeral_public_key.fingerprint().await?.as_ref(),
@@ -69,7 +69,7 @@ impl ProtectedKey for EncryptedSymmetricKey {
         .join(".")
     }
 
-    fn import(serialized: &str) -> Result<Self, KeySealError> {
+    fn import(serialized: &str) -> Result<Self, TombCryptError> {
         let components: Vec<_> = serialized.split('.').collect();
 
         let raw_salt = internal::base64_decode(components[0])?;
@@ -97,7 +97,7 @@ mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub async fn random_struct() -> Result<EncryptedSymmetricKey, KeySealError> {
+    pub async fn random_struct() -> Result<EncryptedSymmetricKey, TombCryptError> {
         let mut data = [0u8; AES_KEY_SIZE + 8];
         internal::random_bytes(&mut data)?;
         let mut salt = [0u8; SALT_SIZE];
@@ -114,7 +114,7 @@ mod tests {
     }
 
     #[wasm_bindgen_test]
-    async fn export_import() -> Result<(), KeySealError> {
+    async fn export_import() -> Result<(), TombCryptError> {
         // Get random values
         let encrypted_key = random_struct().await?;
         let serialized = encrypted_key.export();

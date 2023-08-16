@@ -11,6 +11,10 @@ crate-type = ["cdylib", "rlib"]
 # Common dependencies
 base64 = { version = "^0.21" }
 async-trait = "0.1.71"
+serde = "1.0.183"
+jwt-simple = { version = "0.11.6" }
+rand = "0.8.5"
+chrono = { version = "0.4.22" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 openssl = { version = "^0.10", features = ["vendored"] }
@@ -18,6 +22,7 @@ openssl-hkdf = { version = "^0.2" }
 tokio = { version = "^1", default-features = false, features = ["rt", "rt-multi-thread", "test-util", "tokio-macros", "macros"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
 console_error_panic_hook = "^0.1"
 gloo = { version = "0.8.1", features = [ "utils", "console" ] }
 js-sys = "^0.3"

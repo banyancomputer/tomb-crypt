@@ -13,7 +13,7 @@ use web_sys::{
 };
 
 use crate::key_seal::common::{AES_KEY_SIZE, ECDH_SECRET_BYTE_SIZE, FINGERPRINT_SIZE, SALT_SIZE};
-use crate::key_seal::wasm::KeySealError;
+use crate::key_seal::wasm::TombCryptError;
 
 /* Wasm Utilities */
 
@@ -67,10 +67,10 @@ pub(crate) fn ec_key_gen_params(key_type: EcKeyType) -> EcKeyGenParams {
 }
 
 /// Get the crypto object from the window
-pub(crate) fn crypto() -> Result<web_sys::Crypto, KeySealError> {
+pub(crate) fn crypto() -> Result<web_sys::Crypto, TombCryptError> {
     window()
         .crypto()
-        .map_err(|err| KeySealError::crypto_unavailable(err.into()))
+        .map_err(|err| TombCryptError::crypto_unavailable(err.into()))
 }
 
 #[cfg(test)]
@@ -86,7 +86,7 @@ pub(crate) fn random_bytes(buffer: &mut [u8]) -> JsResult<()> {
 /* Subtle Crypto Utilities */
 
 /// Get the subtle crypto object from the window
-pub(crate) fn subtle_crypto() -> Result<SubtleCrypto, KeySealError> {
+pub(crate) fn subtle_crypto() -> Result<SubtleCrypto, TombCryptError> {
     let crypto = crypto()?;
     Ok(crypto.subtle())
 }
@@ -461,8 +461,8 @@ pub(crate) async fn hkdf_derive_aes_key_with_salt(
 
 /* Misc Utilities */
 
-pub(crate) fn base64_decode(data: &str) -> Result<Vec<u8>, KeySealError> {
-    B64.decode(data).map_err(KeySealError::bad_base64)
+pub(crate) fn base64_decode(data: &str) -> Result<Vec<u8>, TombCryptError> {
+    B64.decode(data).map_err(TombCryptError::bad_base64)
 }
 
 pub(crate) fn base64_encode(data: &[u8]) -> String {
