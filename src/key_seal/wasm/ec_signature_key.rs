@@ -12,6 +12,15 @@ pub struct EcSignatureKey {
     pub(crate) public_key: Option<CryptoKey>,
 }
 
+impl EcSignatureKey {
+    pub fn with_public_key(self: &mut Self, public_key: CryptoKey) -> Self {
+        Self {
+            private_key: self.private_key.clone(),
+            public_key: Some(public_key),
+        }
+    }
+}
+
 #[async_trait(?Send)]
 impl PrivateKey for EcSignatureKey {
     type Error = TombCryptError;
@@ -91,5 +100,11 @@ impl From<CryptoKeyPair> for EcSignatureKey {
             private_key: internal::private_key(&key_pair),
             public_key: Some(internal::public_key(&key_pair)),
         }
+    }
+}
+
+impl From<EcSignatureKey> for CryptoKey {
+    fn from(key: EcSignatureKey) -> Self {
+        key.private_key
     }
 }
