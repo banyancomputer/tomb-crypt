@@ -13,7 +13,7 @@ pub struct EcEncryptionKey {
 }
 
 impl EcEncryptionKey {
-    pub fn with_public_key(mut self: Self, public_key: CryptoKey) -> Self {
+    pub fn with_public_key(mut self, public_key: CryptoKey) -> Self {
         self.public_key = Some(public_key);
         self
     }
