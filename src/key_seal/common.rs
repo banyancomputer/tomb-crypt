@@ -145,10 +145,11 @@ pub trait ProtectedKey: Sized {
 }
 
 /// Defines standard pyaload interface for a JWT token
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ApiToken(pub(crate) JWTClaims<NoCustomClaims>);
 
 /// Defines struct around a JWt bearer token. Can be used to extract metadata on a signed /encoded token
+#[derive(Debug, Clone)]
 pub struct ApiTokenMetadata(pub(crate) TokenMetadata);
 
 #[async_trait(?Send)]
