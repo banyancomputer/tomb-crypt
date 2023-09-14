@@ -278,6 +278,7 @@ pub(crate) async fn ec_derive_shared_secret(
 pub(crate) async fn aes_import_key(
     key_data: &[u8],
     name: &str,
+    extractable: bool,
     uses: &[&str],
 ) -> JsResult<CryptoKey> {
     let crypto = subtle_crypto()?;
@@ -285,7 +286,7 @@ pub(crate) async fn aes_import_key(
         "raw",
         &Uint8Array::from(key_data),
         name,
-        true,
+        extractable,
         &js_array(uses),
     ))
     .await?;
@@ -302,11 +303,12 @@ pub(crate) async fn aes_import_key(
 async fn aes_import_key_with_buffer(
     key_data: &ArrayBuffer,
     name: &str,
+    extractable: bool,
     uses: &[&str],
 ) -> JsResult<CryptoKey> {
     let crypto = subtle_crypto()?;
     let import =
-        crypto_method(crypto.import_key_with_str("raw", key_data, name, true, &js_array(uses)))
+        crypto_method(crypto.import_key_with_str("raw", key_data, name, extractable, &js_array(uses)))
             .await?;
     Ok(import.into())
 }
@@ -433,7 +435,7 @@ pub(crate) async fn hkdf_derive_aes_key_with_salt(
 
     // Import the secret as an HKDF key
     let hkdf_key =
-        aes_import_key_with_buffer(secret_bytes, "HKDF", ["deriveBits"].as_ref()).await?;
+        aes_import_key_with_buffer(secret_bytes, "HKDF", false, ["deriveBits"].as_ref()).await?;
 
     // Derive bits from the HKDF key
     let derive_params = HkdfParams::new(
@@ -453,7 +455,7 @@ pub(crate) async fn hkdf_derive_aes_key_with_salt(
     let derive_bits = derive_bits
         .dyn_into::<ArrayBuffer>()
         .expect("derive bits to be an array buffer");
-    let key = aes_import_key_with_buffer(&derive_bits, algorithm, uses).await?;
+    let key = aes_import_key_with_buffer(&derive_bits, algorithm, true, uses).await?;
 
     // Return the key
     Ok(key)
@@ -485,9 +487,9 @@ mod tests {
         random_bytes(&mut wrapping_key_bytes)?;
 
         // Generate two random AES-KW keys
-        let key = aes_import_key(&key_bytes, "AES-KW", &["wrapKey", "unwrapKey"]).await?;
+        let key = aes_import_key(&key_bytes, "AES-KW", true, &["wrapKey", "unwrapKey"]).await?;
         let wrapping_key =
-            aes_import_key(&wrapping_key_bytes, "AES-KW", &["wrapKey", "unwrapKey"]).await?;
+            aes_import_key(&wrapping_key_bytes, "AES-KW", true, &["wrapKey", "unwrapKey"]).await?;
 
         // Wrap the key
         let wrapped_key: [u8; AES_KEY_SIZE + 8] = aes_wrap_key(&key, &wrapping_key).await?;

@@ -44,6 +44,7 @@ impl PlainKey for SymmetricKey {
             // Note: Not sure if algorithm or uses are required for our purposes,
             // but the web crypto API requires them as arguments.
             "AES-KW",
+            true,
             &["wrapKey", "unwrapKey"],
         )
         .await?;
