@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::key_seal::traits::{PrivateKey, PublicKey, FINGERPRINT_SIZE};
+use crate::key_seal::common::{PrivateKey, PublicKey, FINGERPRINT_SIZE};
+use crate::key_seal::ec_public_key::EcPublicKey;
 use crate::key_seal::internal::{
     export_key_bytes, export_key_pem, gen_ec_key, import_key_bytes, import_key_pem,
 };
-use crate::key_seal::ec_public_key::EcPublicKey;
 use crate::key_seal::TombCryptError;
 
 use p384::SecretKey as P384SecretKey;

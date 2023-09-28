@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::key_seal::traits::{PublicKey, FINGERPRINT_SIZE};
+use crate::key_seal::common::{PublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::internal::{
     export_public_key_bytes, export_public_key_pem, fingerprint, import_public_key_bytes,
     import_public_key_pem,

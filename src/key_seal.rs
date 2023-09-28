@@ -1,9 +1,9 @@
-pub mod traits;
+pub mod common;
 
-mod ec_key;
-mod ec_public_key;
 mod ec_encryption_key;
+mod ec_key;
 mod ec_public_encryption_key;
+mod ec_public_key;
 mod ec_public_signature_key;
 mod ec_signature_key;
 mod encrypted_symmetric_key;
@@ -45,76 +45,66 @@ mod tests {
         45, 45, 45, 45, 45, 66, 69, 71, 73, 78, 32, 80, 82, 73, 86, 65, 84, 69, 32, 75, 69, 89, 45,
         45, 45, 45, 45, 10, 77, 73, 71, 50, 65, 103, 69, 65, 77, 66, 65, 71, 66, 121, 113, 71, 83,
         77, 52, 57, 65, 103, 69, 71, 66, 83, 117, 66, 66, 65, 65, 105, 66, 73, 71, 101, 77, 73, 71,
-        98, 65, 103, 69, 66, 66, 68, 67, 114, 72, 75, 99, 85, 106, 122, 102, 84, 102, 49, 105, 48,
-        47, 80, 79, 53, 10, 49, 121, 111, 56, 102, 97, 97, 89, 112, 89, 100, 84, 105, 70, 81, 81,
-        65, 111, 100, 85, 75, 113, 103, 86, 106, 70, 107, 83, 43, 98, 75, 66, 50, 112, 122, 86,
-        118, 85, 122, 90, 68, 117, 120, 68, 84, 109, 54, 104, 90, 65, 78, 105, 65, 65, 82, 43, 120,
-        74, 89, 50, 82, 82, 68, 88, 10, 88, 72, 55, 50, 112, 89, 74, 85, 54, 79, 81, 65, 80, 102,
-        74, 110, 80, 86, 53, 97, 115, 121, 112, 87, 72, 100, 54, 98, 104, 56, 75, 50, 81, 77, 101,
-        49, 117, 77, 73, 97, 105, 71, 70, 85, 117, 90, 84, 75, 71, 111, 121, 112, 48, 81, 72, 84,
-        67, 117, 107, 111, 115, 68, 117, 69, 10, 76, 52, 101, 48, 52, 51, 74, 50, 103, 115, 101,
-        119, 65, 85, 82, 80, 49, 115, 111, 69, 101, 105, 104, 103, 109, 97, 81, 112, 55, 73, 68,
-        72, 115, 67, 56, 70, 107, 108, 66, 103, 71, 74, 90, 68, 112, 56, 100, 108, 116, 99, 117,
-        89, 84, 110, 77, 61, 10, 45, 45, 45, 45, 45, 69, 78, 68, 32, 80, 82, 73, 86, 65, 84, 69,
-        32, 75, 69, 89, 45, 45, 45, 45, 45, 10,
+        98, 65, 103, 69, 66, 66, 68, 66, 112, 75, 52, 54, 112, 107, 121, 113, 81, 51, 72, 112, 66,
+        122, 48, 75, 71, 10, 49, 119, 55, 89, 112, 85, 83, 43, 68, 65, 51, 88, 78, 77, 54, 113, 66,
+        80, 79, 71, 103, 107, 81, 67, 75, 48, 98, 80, 108, 50, 74, 73, 74, 47, 106, 87, 110, 69,
+        87, 50, 103, 43, 119, 120, 83, 103, 113, 104, 90, 65, 78, 105, 65, 65, 84, 80, 52, 118, 88,
+        85, 121, 97, 75, 43, 10, 116, 109, 87, 76, 81, 90, 118, 76, 100, 107, 116, 103, 79, 75, 98,
+        75, 115, 98, 101, 87, 54, 78, 97, 65, 88, 101, 100, 50, 84, 122, 74, 98, 84, 77, 76, 108,
+        122, 120, 81, 108, 70, 79, 103, 72, 75, 115, 104, 104, 71, 83, 114, 54, 116, 106, 121, 80,
+        52, 103, 116, 109, 52, 103, 75, 112, 10, 69, 121, 51, 76, 87, 112, 48, 73, 50, 69, 66, 55,
+        43, 108, 116, 71, 83, 122, 107, 103, 71, 48, 67, 120, 68, 48, 54, 87, 119, 120, 99, 110,
+        97, 103, 54, 85, 107, 97, 52, 52, 69, 79, 110, 77, 113, 48, 52, 52, 55, 51, 76, 74, 65, 49,
+        89, 61, 10, 45, 45, 45, 45, 45, 69, 78, 68, 32, 80, 82, 73, 86, 65, 84, 69, 32, 75, 69, 89,
+        45, 45, 45, 45, 45, 10,
     ];
 
     const TEST_DER_KEY: &[u8] = &[
-        48, 129, 164, 2, 1, 1, 4, 48, 171, 28, 167, 20, 143, 55, 211, 127, 88, 180, 252, 243, 185,
-        215, 42, 60, 125, 166, 152, 165, 135, 83, 136, 84, 16, 2, 135, 84, 42, 168, 21, 140, 89,
-        18, 249, 178, 129, 218, 156, 213, 189, 76, 217, 14, 236, 67, 78, 110, 160, 7, 6, 5, 43,
-        129, 4, 0, 34, 161, 100, 3, 98, 0, 4, 126, 196, 150, 54, 69, 16, 215, 92, 126, 246, 165,
-        130, 84, 232, 228, 0, 61, 242, 103, 61, 94, 90, 179, 42, 86, 29, 222, 155, 135, 194, 182,
-        64, 199, 181, 184, 194, 26, 136, 97, 84, 185, 148, 202, 26, 140, 169, 209, 1, 211, 10, 233,
-        40, 176, 59, 132, 47, 135, 180, 227, 114, 118, 130, 199, 176, 1, 68, 79, 214, 202, 4, 122,
-        40, 96, 153, 164, 41, 236, 128, 199, 176, 47, 5, 146, 80, 96, 24, 150, 67, 167, 199, 101,
-        181, 203, 152, 78, 115,
+        48, 129, 155, 2, 1, 1, 4, 48, 105, 43, 142, 169, 147, 42, 144, 220, 122, 65, 207, 66, 134,
+        215, 14, 216, 165, 68, 190, 12, 13, 215, 52, 206, 170, 4, 243, 134, 130, 68, 2, 43, 70,
+        207, 151, 98, 72, 39, 248, 214, 156, 69, 182, 131, 236, 49, 74, 10, 161, 100, 3, 98, 0, 4,
+        207, 226, 245, 212, 201, 162, 190, 182, 101, 139, 65, 155, 203, 118, 75, 96, 56, 166, 202,
+        177, 183, 150, 232, 214, 128, 93, 231, 118, 79, 50, 91, 76, 194, 229, 207, 20, 37, 20, 232,
+        7, 42, 200, 97, 25, 42, 250, 182, 60, 143, 226, 11, 102, 226, 2, 169, 19, 45, 203, 90, 157,
+        8, 216, 64, 123, 250, 91, 70, 75, 57, 32, 27, 64, 177, 15, 78, 150, 195, 23, 39, 106, 14,
+        148, 145, 174, 56, 16, 233, 204, 171, 78, 56, 239, 114, 201, 3, 86,
     ];
 
-    const SEALED_KEY: &str = "GvQwdfPJ97rUTOl/UUHWjw==.knWedkNCmB11L2uRjpj6tU60mQs25kVSvCYMxDWiR9HKPgeR2sgISw==.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAECa67CCuaPgE+CuGb7acOFKdnzYy9I5hbU3AOQmi4clGAcmd9VAm+JeQqbz8mB1wwJQm1jhpYgcAjwC+kEPL9W2pneRNWwSm0lv15h2G0Jo8mA1NJUu7MDTFRNZQlGJf0";
+    // const SEALED_KEY: &str = "OhCCSZhzdgZzxN3vBLao8A==.QBmbrVUXqNgqT200.R2J392hmThKy7kaFs+NsTSK0rN+/KuZ5qJdSqminB6BqZyG5tLznNM1hGVdend79.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEJexFOG+YiALcuxFTsD+hWqeWgFxJ0ljadHyCk1dS2ACHUqChXhhtJx/xWnC6yHeTvCgXDxHGZOp/nOaUlZ4GnuhH9HSiphgR2g7nddDe8NRc9vQZSxepkj8B+c25ivP3";
+    const SEALED_KEY: &str = "FeVEBYkXSqi/7wNX4KevwA==.2fxA9mj2dCyc+ajM.AQ8y4XsMS6z/r513AOVVQzBVaUNFph//4nCJZVcp8bEi5AvL8iDcWDMMkNKDoJ7e.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEs8INCcNBaPG5yzuG6V7V9/NJJsXSu7iSUzHw2E4oOvVTokgWStSNThSVtPsvlfh4OBUbKrGdYp0WgKpSRKaIVkYL6fZUswKkiUq7iHiLGdXL2A3/Z+fZhlPUfAruAUVX";
+    // this is a temporary test to ensure the end to end bits are working as expected while proper
+    // tests are built
+    async fn test_encryption_end_to_end() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{PlainKey, PrivateKey, ProtectedKey};
 
-    // // this is a temporary test to ensure the end to end bits are working as expected while proper
-    // // tests are built
-    // async fn test_encryption_end_to_end() -> Result<(), TombCryptError> {
-    //     use crate::key_seal::common::{PlainKey, PrivateKey, ProtectedKey};
-    //
-    //     let temporal_key = SymmetricKey::from(*PLAINTEXT_SYMMETRIC_KEY);
-    //
-    //     let device_key = EcEncryptionKey::generate().await?;
-    //     let encrypted_temporal_key = temporal_key.encrypt_for(&device_key.public_key()?).await?;
-    //     let kex_blob = encrypted_temporal_key.export();
-    //
-    //     let loaded_temporal_key = EncryptedSymmetricKey::import(&kex_blob)?;
-    //     let decrypted_temporal_key = loaded_temporal_key.decrypt_with(&device_key).await?;
-    //
-    //     let mut raw_temporal_key = [0u8; 32];
-    //     raw_temporal_key.copy_from_slice(decrypted_temporal_key.as_ref());
-    //
-    //     assert_eq!(PLAINTEXT_SYMMETRIC_KEY, &raw_temporal_key);
-    //
-    //     Ok(())
-    // }
+        let temporal_key = SymmetricKey::from(*PLAINTEXT_SYMMETRIC_KEY);
+
+        let device_key = EcEncryptionKey::generate().await?;
+        let encrypted_temporal_key = temporal_key.encrypt_for(&device_key.public_key()?).await?;
+        let kex_blob = encrypted_temporal_key.export();
+        let loaded_temporal_key = EncryptedSymmetricKey::import(&kex_blob)?;
+        let decrypted_temporal_key = loaded_temporal_key.decrypt_with(&device_key).await?;
+
+        let mut raw_temporal_key = [0u8; 32];
+        raw_temporal_key.copy_from_slice(decrypted_temporal_key.as_ref());
+
+        assert_eq!(PLAINTEXT_SYMMETRIC_KEY, &raw_temporal_key);
+
+        Ok(())
+    }
 
     // this is a temporary test to ensure the end to end bits are working as expected while proper
     // tests are built
     async fn test_encryption_key_roundtripping() -> Result<(), TombCryptError> {
-        use crate::key_seal::traits::{PrivateKey, PublicKey};
-        println!("Generating key");
+        use crate::key_seal::common::{PrivateKey, PublicKey};
         let key = EcEncryptionKey::generate().await?;
-        println!("Getting public key");
         let public_key = key.public_key()?;
 
         // dirty comparisons but works for now
-        println!("Exporting key bytes");
         let raw_key_bytes = key.export_bytes().await?;
-        println!("bytes {:?}", raw_key_bytes);
-        println!("Importing key bytes");
         let imported_key = EcEncryptionKey::import_bytes(&raw_key_bytes).await?;
-        println!("Reexporting key bytes");
         let reexported_key_bytes = imported_key.export_bytes().await?;
         assert_eq!(raw_key_bytes, reexported_key_bytes);
-        println!("Roundtripped Private Key Bytes!");
-
         let raw_public_key_bytes = public_key.export_bytes().await?;
         let imported_public_key =
             EcPublicEncryptionKey::import_bytes(&raw_public_key_bytes).await?;
@@ -134,100 +124,101 @@ mod tests {
         Ok(())
     }
 
-    // async fn test_api_token() -> Result<(), TombCryptError> {
-    //     use crate::key_seal::common::{ApiToken, ApiTokenMetadata, Jwt, PrivateKey, PublicKey};
-    //     let key = EcSignatureKey::generate().await?;
-    //     let public_key = key.public_key()?;
-    //
-    //     let claims = ApiToken::new("test".to_string(), "test".to_string());
-    //     let token = claims.encode_to(&key).await?;
-    //     let _ = ApiToken::decode_from(&token, &public_key).await?;
-    //     let metadata = ApiTokenMetadata::try_from(token)?;
-    //     let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
-    //
-    //     // Check the metadata
-    //     assert_eq!(metadata.alg(), "ES384");
-    //     assert_eq!(metadata.kid()?, key_id);
-    //     assert_eq!(metadata.typ()?, "JWT");
-    //
-    //     // Check the claims
-    //     assert!(!claims.is_expired()?);
-    //     assert!(claims.iat()? < claims.exp()?);
-    //     assert!(claims.nbf()? < claims.exp()?);
-    //     assert_eq!(claims.aud()?, "test");
-    //     assert_eq!(claims.sub()?, "test");
-    //
-    //     Ok(())
-    // }
-    //
-    // async fn test_api_token_fail() -> Result<(), TombCryptError> {
-    //     use crate::key_seal::common::{ApiToken, Jwt, PrivateKey};
-    //     let key = EcSignatureKey::generate().await?;
-    //     let bad_key = EcSignatureKey::generate().await?;
-    //     let bad_public_key = bad_key.public_key()?;
-    //
-    //     let claims = ApiToken::new("test".to_string(), "test".to_string());
-    //     let token = claims.encode_to(&key).await?;
-    //     let _ = ApiToken::decode_from(&token, &bad_public_key).await?;
-    //
-    //     Ok(())
-    // }
+    async fn test_api_token() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{ApiToken, ApiTokenMetadata, Jwt, PrivateKey, PublicKey};
+        let key = EcSignatureKey::generate().await?;
+        let public_key = key.public_key()?;
+
+        let claims = ApiToken::new("test".to_string(), "test".to_string());
+        let token = claims.encode_to(&key).await?;
+        let _ = ApiToken::decode_from(&token, &public_key).await?;
+        let metadata = ApiTokenMetadata::try_from(token)?;
+        let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
+
+        // Check the metadata
+        assert_eq!(metadata.alg(), "ES384");
+        assert_eq!(metadata.kid()?, key_id);
+        assert_eq!(metadata.typ()?, "JWT");
+
+        // Check the claims
+        assert!(!claims.is_expired()?);
+        assert!(claims.iat()? < claims.exp()?);
+        assert!(claims.nbf()? < claims.exp()?);
+        assert_eq!(claims.aud()?, "test");
+        assert_eq!(claims.sub()?, "test");
+
+        Ok(())
+    }
+
+    async fn test_api_token_fail() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{ApiToken, Jwt, PrivateKey};
+        let key = EcSignatureKey::generate().await?;
+        let bad_key = EcSignatureKey::generate().await?;
+        let bad_public_key = bad_key.public_key()?;
+
+        let claims = ApiToken::new("test".to_string(), "test".to_string());
+        let token = claims.encode_to(&key).await?;
+        let _ = ApiToken::decode_from(&token, &bad_public_key).await?;
+
+        Ok(())
+    }
 
     #[cfg(not(target_arch = "wasm32"))]
     mod native_tests {
         use super::*;
 
-        // async fn test_pem_key_parse_and_use() -> Result<(), TombCryptError> {
-        //     use crate::key_seal::common::{PrivateKey, ProtectedKey};
-        //
-        //     let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
-        //     let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
-        //     let plain_key = protected_key.decrypt_with(&private_key).await?;
-        //     assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
-        //
-        //     Ok(())
-        // }
-        //
-        // async fn test_der_key_parse_and_use() -> Result<(), TombCryptError> {
-        //     use crate::key_seal::common::{PrivateKey, ProtectedKey};
-        //
-        //     let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
-        //     let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
-        //     let plain_key = protected_key.decrypt_with(&private_key).await?;
-        //     assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
-        //     Ok(())
-        // }
+        async fn test_pem_key_parse_and_use() -> Result<(), TombCryptError> {
+            use crate::key_seal::common::{PrivateKey, ProtectedKey};
 
-        // #[tokio::test]
-        // async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
-        //     test_pem_key_parse_and_use().await
-        // }
-        //
-        // #[tokio::test]
-        // async fn der_key_parse_and_use() -> Result<(), TombCryptError> {
-        //     test_der_key_parse_and_use().await
-        // }
-        //
-        // #[tokio::test]
-        // async fn encryption_end_to_end() -> Result<(), TombCryptError> {
-        //     test_encryption_end_to_end().await
-        // }
+            let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
+            let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
+            let plain_key = protected_key.decrypt_with(&private_key).await?;
+            assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
+
+            Ok(())
+        }
+
+        async fn test_der_key_parse_and_use() -> Result<(), TombCryptError> {
+            use crate::key_seal::common::{PrivateKey, ProtectedKey};
+
+            let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
+            let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
+            let plain_key = protected_key.decrypt_with(&private_key).await?;
+            assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
+            test_pem_key_parse_and_use().await
+        }
+
+        #[tokio::test]
+        async fn der_key_parse_and_use() -> Result<(), TombCryptError> {
+            test_der_key_parse_and_use().await
+        }
+
+        #[tokio::test]
+        async fn encryption_end_to_end() -> Result<(), TombCryptError> {
+            test_encryption_end_to_end().await
+        }
 
         #[tokio::test]
         async fn encryption_key_roundtripping() -> Result<(), TombCryptError> {
             test_encryption_key_roundtripping().await
         }
 
-        // #[tokio::test]
-        // async fn api_token() -> Result<(), TombCryptError> {
-        //     test_api_token().await
-        // }
+        #[tokio::test]
+        async fn api_token() -> Result<(), TombCryptError> {
+            test_api_token().await
+        }
 
-        // #[tokio::test]
-        // #[should_panic]
-        // async fn api_token_fail() {
-        //     test_api_token_fail().await.unwrap();
-        // }
+        #[tokio::test]
+        #[should_panic]
+        async fn api_token_fail() {
+            test_api_token_fail().await.unwrap();
+        }
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -238,7 +229,7 @@ mod tests {
         wasm_bindgen_test_configure!(run_in_browser);
 
         async fn test_signature_key_roundtripping() -> Result<(), TombCryptError> {
-            use crate::key_seal::traits::{PrivateKey, PublicKey};
+            use crate::key_seal::common::{PrivateKey, PublicKey};
 
             let key = EcSignatureKey::generate().await?;
             let public_key = key.public_key()?;
@@ -268,10 +259,10 @@ mod tests {
             Ok(())
         }
 
-        // #[wasm_bindgen_test]
-        // async fn encryption_end_to_end() -> Result<(), TombCryptError> {
-        //     test_encryption_end_to_end().await
-        // }
+        #[wasm_bindgen_test]
+        async fn encryption_end_to_end() -> Result<(), TombCryptError> {
+            test_encryption_end_to_end().await
+        }
 
         #[wasm_bindgen_test]
         async fn encryption_key_roundtripping() -> Result<(), TombCryptError> {
@@ -283,15 +274,15 @@ mod tests {
             test_signature_key_roundtripping().await
         }
 
-        // #[wasm_bindgen_test]
-        // async fn api_token() -> Result<(), TombCryptError> {
-        //     test_api_token().await
-        // }
+        #[wasm_bindgen_test]
+        async fn api_token() -> Result<(), TombCryptError> {
+            test_api_token().await
+        }
 
-        // #[wasm_bindgen_test]
-        // #[should_panic]
-        // async fn api_token_fail() -> Result<(), TombCryptError> {
-        //     test_api_token_fail().await
-        // }
+        #[wasm_bindgen_test]
+        #[should_panic]
+        async fn api_token_fail() -> Result<(), TombCryptError> {
+            test_api_token_fail().await
+        }
     }
 }

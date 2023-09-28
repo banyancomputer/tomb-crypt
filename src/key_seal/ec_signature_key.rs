@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::key_seal::traits::{PrivateKey,  FINGERPRINT_SIZE};
-use crate::key_seal::{EcPublicSignatureKey, ec_key::EcKey};
+use crate::key_seal::common::{PrivateKey, FINGERPRINT_SIZE};
+use crate::key_seal::{ec_key::EcKey, EcPublicSignatureKey};
 
 use crate::key_seal::TombCryptError;
 

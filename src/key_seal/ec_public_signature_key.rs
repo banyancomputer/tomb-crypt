@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
-use crate::key_seal::traits::{PublicKey, FINGERPRINT_SIZE};
-use crate::key_seal::TombCryptError;
+use crate::key_seal::common::{PublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::ec_public_key::EcPublicKey;
+use crate::key_seal::TombCryptError;
 
 #[derive(Clone, Debug)]
 pub struct EcPublicSignatureKey(pub(crate) EcPublicKey);

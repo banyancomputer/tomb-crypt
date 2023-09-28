@@ -1,13 +1,14 @@
+use aes_gcm::{Aes256Gcm, Key, Nonce};
 use base64ct::LineEnding;
 use p384::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     PublicKey as P384PublicKey, SecretKey as P384SecretKey,
 };
-use aes_gcm::{Aes256Gcm, Key, Nonce};
 use rand::RngCore;
+use sec1::DecodeEcPrivateKey;
 use sha1::Digest;
 
-use crate::key_seal::traits::{FINGERPRINT_SIZE, SALT_SIZE, NONCE_SIZE};
+use crate::key_seal::common::{AES_KEY_SIZE, FINGERPRINT_SIZE, NONCE_SIZE, SALT_SIZE};
 use crate::prelude::TombCryptError;
 
 pub fn generate_salt() -> [u8; SALT_SIZE] {
@@ -36,13 +37,13 @@ pub fn gen_ec_key() -> P384SecretKey {
 }
 
 pub fn import_key_bytes(der_bytes: &[u8]) -> Result<P384SecretKey, TombCryptError> {
-    P384SecretKey::from_pkcs8_der(der_bytes).map_err(TombCryptError::private_key_import_failed)
+    P384SecretKey::from_sec1_der(der_bytes)
+        .map_err(|_| TombCryptError::private_key_import_bytes_failed())
 }
 pub fn export_key_bytes(private_key: &P384SecretKey) -> Result<Vec<u8>, TombCryptError> {
     Ok(private_key
-        .to_pkcs8_der()
-        .map_err(TombCryptError::private_key_export_failed)?
-        .to_bytes()
+        .to_sec1_der()
+        .map_err(|_| TombCryptError::private_key_export_bytes_failed())?
         .to_vec())
 }
 pub fn import_key_pem(pem_bytes: &[u8]) -> Result<P384SecretKey, TombCryptError> {
@@ -76,12 +77,3 @@ pub fn export_public_key_pem(public_key: &P384PublicKey) -> Result<Vec<u8>, Tomb
         .as_bytes()
         .to_vec())
 }
-
-// pub fn encrypt_key(encrypting_key: &[u8], unprotected_key: &[u8]) -> Result<(Nonce<>, [u8; 40]), TombCryptError> {
-//     let wrapping_key: &Key<Aes256Gcm> = encrypting_key.into();
-//     let mut enciphered_key = [0u8; 40];
-//     let mut nonce = [0u8; 12];
-//     let mut rng = rand::thread_rng();
-//     rng.fill_bytes(&mut nonce);
-//     panic!("TODO: implement encryption")
-// }

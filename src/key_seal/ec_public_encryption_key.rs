@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::key_seal::traits::{PublicKey, FINGERPRINT_SIZE};
+use crate::key_seal::common::{PublicKey, FINGERPRINT_SIZE};
 use crate::key_seal::ec_public_key::EcPublicKey;
 use crate::prelude::TombCryptError;
 
@@ -11,7 +11,7 @@ impl PublicKey for EcPublicEncryptionKey {
     type Error = TombCryptError;
 
     async fn export(&self) -> Result<Vec<u8>, TombCryptError> {
-       self.0.export().await
+        self.0.export().await
     }
 
     async fn export_bytes(&self) -> Result<Vec<u8>, TombCryptError> {

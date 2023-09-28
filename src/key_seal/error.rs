@@ -71,6 +71,18 @@ impl TombCryptError {
             kind: TombCryptErrorKind::PrivateKeyImportFailed(err.into()),
         }
     }
+    // TODO: There's an issue where setting the type to either sec1::der::Error or p384::elliptic_curve::Error
+    //       causes a compiler error. For now, bad error type is better than no type.
+    pub(crate) fn private_key_export_bytes_failed() -> Self {
+        Self {
+            kind: TombCryptErrorKind::PrivateKeyExportBytesFailed,
+        }
+    }
+    pub(crate) fn private_key_import_bytes_failed() -> Self {
+        Self {
+            kind: TombCryptErrorKind::PrivateKeyImportBytesFailed,
+        }
+    }
     pub(crate) fn public_key_export_failed(err: impl Into<p384::pkcs8::spki::Error>) -> Self {
         Self {
             kind: TombCryptErrorKind::PublicKeyExportFailed(err.into()),
@@ -82,9 +94,39 @@ impl TombCryptError {
         }
     }
 
-    pub(crate) fn secret_sharing_failed() -> Self {
+    pub(crate) fn hkdf_extract_failed(err: impl Into<hkdf::InvalidLength>) -> Self {
         Self {
-            kind: TombCryptErrorKind::SecretSharingFailed,
+            kind: TombCryptErrorKind::HkdfExtractFailed(err.into()),
+        }
+    }
+
+    pub(crate) fn encryption_failed(err: impl Into<aes_gcm::Error>) -> Self {
+        Self {
+            kind: TombCryptErrorKind::EncryptionFailed(err.into()),
+        }
+    }
+
+    pub(crate) fn decryption_failed(err: impl Into<aes_gcm::Error>) -> Self {
+        Self {
+            kind: TombCryptErrorKind::DecryptionFailed(err.into()),
+        }
+    }
+
+    pub(crate) fn jwt_error(err: impl Into<jwt_simple::Error>) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtError(err.into()),
+        }
+    }
+
+    pub(crate) fn jwt_missing_claims(claim: &str) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtMissingClaims(claim.to_string()),
+        }
+    }
+
+    pub(crate) fn jwt_missing_header_field(field: &str) -> Self {
+        Self {
+            kind: TombCryptErrorKind::JwtMissingHeaderField(field.to_string()),
         }
     }
 }
@@ -135,13 +177,20 @@ impl std::error::Error for TombCryptError {
 #[derive(Debug)]
 #[non_exhaustive]
 enum TombCryptErrorKind {
+    PrivateKeyExportBytesFailed,
+    PrivateKeyImportBytesFailed,
     PrivateKeyExportFailed(p384::pkcs8::Error),
     PrivateKeyImportFailed(p384::pkcs8::Error),
     PublicKeyExportFailed(p384::pkcs8::spki::Error),
     PublicKeyImportFailed(p384::pkcs8::spki::Error),
 
-    // TODO: Better error handling
-    SecretSharingFailed,
+    HkdfExtractFailed(hkdf::InvalidLength),
+    EncryptionFailed(aes_gcm::Error),
+    DecryptionFailed(aes_gcm::Error),
+
+    JwtError(jwt_simple::Error),
+    JwtMissingClaims(String),
+    JwtMissingHeaderField(String),
 
     InvalidUtf8(std::str::Utf8Error),
 }

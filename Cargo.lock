@@ -1460,6 +1460,7 @@ dependencies = [
  "pem",
  "rand",
  "rand_core",
+ "sec1",
  "serde",
  "sha1",
  "sha2",
