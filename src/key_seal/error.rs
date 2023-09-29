@@ -7,58 +7,14 @@ pub struct TombCryptError {
 }
 
 impl TombCryptError {
-    // pub(crate) fn background_generation_failed(err: tokio::task::JoinError) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::BackgroundGenerationFailed(err),
-    //     }
-    // }
-    //
-    // pub(crate) fn bad_format(err: EllipticCurveError) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::BadFormat(err),
-    //     }
-    // }
-    //
-    // pub(crate) fn bad_base64(err: base64::DecodeError) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::InvalidBase64(err),
-    //     }
-    // }
-
-    //
-    // pub(crate) fn public_key_export_failed(err: impl Into<pkcs8::Error>) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::PublicKeyExportFailed(err.into())
-    //     }
-    // }
-
-    // pub(crate) fn incompatible_derivation(err: EllipticCurveError) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::IncompatibleDerivationKey(err),
-    //     }
-    // }
-    //
-    // pub(crate) fn jwt_error(err: SimpleJwtError) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::JwtError(err),
-    //     }
-    // }
-    //
-    // pub(crate) fn jwt_missing_claims(claim: &str) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::JwtMissingClaims(claim.to_string()),
-    //     }
-    // }
-    //
-    // pub(crate) fn jwt_missing_header_field(field: &str) -> Self {
-    //     Self {
-    //         kind: TombCryptErrorKind::JwtMissingHeaderField(field.to_string()),
-    //     }
-    // }
-    //
     pub(crate) fn invalid_utf8(err: std::str::Utf8Error) -> Self {
         Self {
             kind: TombCryptErrorKind::InvalidUtf8(err),
+        }
+    }
+    pub(crate) fn invalid_base64(err: base64ct::Error) -> Self {
+        Self {
+            kind: TombCryptErrorKind::InvalidBase64(err),
         }
     }
     pub(crate) fn private_key_export_failed(err: impl Into<p384::pkcs8::Error>) -> Self {
@@ -94,9 +50,9 @@ impl TombCryptError {
         }
     }
 
-    pub(crate) fn hkdf_extract_failed(err: impl Into<hkdf::InvalidLength>) -> Self {
+    pub(crate) fn hkdf_expand_failed(err: impl Into<hkdf::InvalidLength>) -> Self {
         Self {
-            kind: TombCryptErrorKind::HkdfExtractFailed(err.into()),
+            kind: TombCryptErrorKind::HkdfExpandFailed(err.into()),
         }
     }
 
@@ -136,17 +92,13 @@ impl Display for TombCryptError {
         use TombCryptErrorKind::*;
 
         let msg = match &self.kind {
-            // BackgroundGenerationFailed(_) => "unable to background key generation",
-            // BadFormat(_) => "imported key was malformed",
-            // ExportFailed(_) => "attempt to export key was rejecxted by underlying library",
-            // PrivateKeyExportFailed(_) => "private key export failed",
-            // PublicKeyExportFailed(_) => "public key export failed",
-            // EcError(_) => "elliptic curve error",
-            // JwtError(_) => "jwt error",
-            // JwtMissingClaims(_) => "missing jwt claims",
-            // JwtMissingHeaderField(_) => "missing jwt header field",
-            // InvalidBase64(_) => "invalid base64",
-            // InvalidUtf8(_) => "invalid utf8",
+            PrivateKeyExportFailed(_) => "private key export failed",
+            PublicKeyExportFailed(_) => "public key export failed",
+            JwtError(_) => "jwt error",
+            JwtMissingClaims(_) => "missing jwt claims",
+            JwtMissingHeaderField(_) => "missing jwt header field",
+            InvalidBase64(_) => "invalid base64",
+            InvalidUtf8(_) => "invalid utf8",
             _ => "placeholder",
         };
 
@@ -184,7 +136,7 @@ enum TombCryptErrorKind {
     PublicKeyExportFailed(p384::pkcs8::spki::Error),
     PublicKeyImportFailed(p384::pkcs8::spki::Error),
 
-    HkdfExtractFailed(hkdf::InvalidLength),
+    HkdfExpandFailed(hkdf::InvalidLength),
     EncryptionFailed(aes_gcm::Error),
     DecryptionFailed(aes_gcm::Error),
 
@@ -193,4 +145,5 @@ enum TombCryptErrorKind {
     JwtMissingHeaderField(String),
 
     InvalidUtf8(std::str::Utf8Error),
+    InvalidBase64(base64ct::Error),
 }

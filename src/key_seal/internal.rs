@@ -1,14 +1,12 @@
-use aes_gcm::{Aes256Gcm, Key, Nonce};
 use base64ct::LineEnding;
 use p384::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     PublicKey as P384PublicKey, SecretKey as P384SecretKey,
 };
 use rand::RngCore;
-use sec1::DecodeEcPrivateKey;
 use sha1::Digest;
 
-use crate::key_seal::common::{AES_KEY_SIZE, FINGERPRINT_SIZE, NONCE_SIZE, SALT_SIZE};
+use crate::key_seal::common::{FINGERPRINT_SIZE, SALT_SIZE};
 use crate::prelude::TombCryptError;
 
 pub fn generate_salt() -> [u8; SALT_SIZE] {

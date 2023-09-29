@@ -8,7 +8,9 @@ use std::error::Error;
 /// Number of bytes used for our AES keys (256-bit)
 pub const AES_KEY_SIZE: usize = 32;
 
-// TODO: use this to configure Aes Nonce
+/// Size of encrypted AES key material
+pub const ENCRYPTED_AES_KEY_SIZE: usize = 48;
+
 /// How long Nonce values are
 pub const NONCE_SIZE: usize = 12;
 

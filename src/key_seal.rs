@@ -70,10 +70,8 @@ mod tests {
         148, 145, 174, 56, 16, 233, 204, 171, 78, 56, 239, 114, 201, 3, 86,
     ];
 
-    // const SEALED_KEY: &str = "OhCCSZhzdgZzxN3vBLao8A==.QBmbrVUXqNgqT200.R2J392hmThKy7kaFs+NsTSK0rN+/KuZ5qJdSqminB6BqZyG5tLznNM1hGVdend79.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEJexFOG+YiALcuxFTsD+hWqeWgFxJ0ljadHyCk1dS2ACHUqChXhhtJx/xWnC6yHeTvCgXDxHGZOp/nOaUlZ4GnuhH9HSiphgR2g7nddDe8NRc9vQZSxepkj8B+c25ivP3";
     const SEALED_KEY: &str = "FeVEBYkXSqi/7wNX4KevwA==.2fxA9mj2dCyc+ajM.AQ8y4XsMS6z/r513AOVVQzBVaUNFph//4nCJZVcp8bEi5AvL8iDcWDMMkNKDoJ7e.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEs8INCcNBaPG5yzuG6V7V9/NJJsXSu7iSUzHw2E4oOvVTokgWStSNThSVtPsvlfh4OBUbKrGdYp0WgKpSRKaIVkYL6fZUswKkiUq7iHiLGdXL2A3/Z+fZhlPUfAruAUVX";
-    // this is a temporary test to ensure the end to end bits are working as expected while proper
-    // tests are built
+
     async fn test_encryption_end_to_end() -> Result<(), TombCryptError> {
         use crate::key_seal::common::{PlainKey, PrivateKey, ProtectedKey};
 
@@ -93,8 +91,6 @@ mod tests {
         Ok(())
     }
 
-    // this is a temporary test to ensure the end to end bits are working as expected while proper
-    // tests are built
     async fn test_encryption_key_roundtripping() -> Result<(), TombCryptError> {
         use crate::key_seal::common::{PrivateKey, PublicKey};
         let key = EcEncryptionKey::generate().await?;
@@ -118,6 +114,37 @@ mod tests {
 
         let raw_public_key_pem = public_key.export().await?;
         let imported_public_key = EcPublicEncryptionKey::import(&raw_public_key_pem).await?;
+        let reexported_public_key_pem = imported_public_key.export().await?;
+        assert_eq!(raw_public_key_pem, reexported_public_key_pem);
+
+        Ok(())
+    }
+
+    async fn test_signature_key_roundtripping() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{PrivateKey, PublicKey};
+
+        let key = EcSignatureKey::generate().await?;
+        let public_key = key.public_key()?;
+
+        // dirty comparisons but works for now
+        let raw_key_bytes = key.export_bytes().await?;
+        let imported_key = EcSignatureKey::import_bytes(&raw_key_bytes).await?;
+        let reexported_key_bytes = imported_key.export_bytes().await?;
+        assert_eq!(raw_key_bytes, reexported_key_bytes);
+
+        let raw_public_key_bytes = public_key.export_bytes().await?;
+        let imported_public_key =
+            EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
+        let reexported_public_key_bytes = imported_public_key.export_bytes().await?;
+        assert_eq!(raw_public_key_bytes, reexported_public_key_bytes);
+
+        let raw_key_pem = key.export().await?;
+        let imported_key = EcSignatureKey::import(&raw_key_pem).await?;
+        let reexported_key_pem = imported_key.export().await?;
+        assert_eq!(raw_key_pem, reexported_key_pem);
+
+        let raw_public_key_pem = public_key.export().await?;
+        let imported_public_key = EcPublicSignatureKey::import(&raw_public_key_pem).await?;
         let reexported_public_key_pem = imported_public_key.export().await?;
         assert_eq!(raw_public_key_pem, reexported_public_key_pem);
 
@@ -163,31 +190,31 @@ mod tests {
         Ok(())
     }
 
+    async fn test_pem_key_parse_and_use() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{PrivateKey, ProtectedKey};
+
+        let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
+        let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
+        let plain_key = protected_key.decrypt_with(&private_key).await?;
+        assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
+
+        Ok(())
+    }
+
+    async fn test_der_key_parse_and_use() -> Result<(), TombCryptError> {
+        use crate::key_seal::common::{PrivateKey, ProtectedKey};
+
+        let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
+        let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
+        let plain_key = protected_key.decrypt_with(&private_key).await?;
+        assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
+
+        Ok(())
+    }
+
     #[cfg(not(target_arch = "wasm32"))]
     mod native_tests {
         use super::*;
-
-        async fn test_pem_key_parse_and_use() -> Result<(), TombCryptError> {
-            use crate::key_seal::common::{PrivateKey, ProtectedKey};
-
-            let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
-            let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
-            let plain_key = protected_key.decrypt_with(&private_key).await?;
-            assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
-
-            Ok(())
-        }
-
-        async fn test_der_key_parse_and_use() -> Result<(), TombCryptError> {
-            use crate::key_seal::common::{PrivateKey, ProtectedKey};
-
-            let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
-            let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
-            let plain_key = protected_key.decrypt_with(&private_key).await?;
-            assert_eq!(plain_key.as_ref(), PLAINTEXT_SYMMETRIC_KEY);
-
-            Ok(())
-        }
 
         #[tokio::test]
         async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
@@ -210,6 +237,11 @@ mod tests {
         }
 
         #[tokio::test]
+        async fn signature_key_roundtripping() -> Result<(), TombCryptError> {
+            test_signature_key_roundtripping().await
+        }
+
+        #[tokio::test]
         async fn api_token() -> Result<(), TombCryptError> {
             test_api_token().await
         }
@@ -228,35 +260,14 @@ mod tests {
 
         wasm_bindgen_test_configure!(run_in_browser);
 
-        async fn test_signature_key_roundtripping() -> Result<(), TombCryptError> {
-            use crate::key_seal::common::{PrivateKey, PublicKey};
+        #[wasm_bindgen_test]
+        async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
+            test_pem_key_parse_and_use().await
+        }
 
-            let key = EcSignatureKey::generate().await?;
-            let public_key = key.public_key()?;
-
-            // dirty comparisons but works for now
-            let raw_key_bytes = key.export_bytes().await?;
-            let imported_key = EcSignatureKey::import_bytes(&raw_key_bytes).await?;
-            let reexported_key_bytes = imported_key.export_bytes().await?;
-            assert_eq!(raw_key_bytes, reexported_key_bytes);
-
-            let raw_public_key_bytes = public_key.export_bytes().await?;
-            let imported_public_key =
-                EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
-            let reexported_public_key_bytes = imported_public_key.export_bytes().await?;
-            assert_eq!(raw_public_key_bytes, reexported_public_key_bytes);
-
-            let raw_key_pem = key.export().await?;
-            let imported_key = EcSignatureKey::import(&raw_key_pem).await?;
-            let reexported_key_pem = imported_key.export().await?;
-            assert_eq!(raw_key_pem, reexported_key_pem);
-
-            let raw_public_key_pem = public_key.export().await?;
-            let imported_public_key = EcPublicSignatureKey::import(&raw_public_key_pem).await?;
-            let reexported_public_key_pem = imported_public_key.export().await?;
-            assert_eq!(raw_public_key_pem, reexported_public_key_pem);
-
-            Ok(())
+        #[wasm_bindgen_test]
+        async fn der_key_parse_and_use() -> Result<(), TombCryptError> {
+            test_der_key_parse_and_use().await
         }
 
         #[wasm_bindgen_test]

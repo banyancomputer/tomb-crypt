@@ -1,11 +1,8 @@
 use async_trait::async_trait;
 
-use crate::key_seal::common::{PrivateKey, PublicKey, FINGERPRINT_SIZE};
-use crate::key_seal::internal::{
-    export_key_bytes, export_key_pem, gen_ec_key, import_key_bytes, import_key_pem,
-};
+use crate::key_seal::common::{PrivateKey, FINGERPRINT_SIZE};
 use crate::key_seal::TombCryptError;
-use crate::key_seal::{ec_key::EcKey, ec_public_key::EcPublicKey, EcPublicEncryptionKey};
+use crate::key_seal::{ec_key::EcKey, EcPublicEncryptionKey};
 
 pub struct EcEncryptionKey(pub(crate) EcKey);
 
@@ -27,7 +24,7 @@ impl PrivateKey for EcEncryptionKey {
     }
 
     async fn generate() -> Result<Self, TombCryptError> {
-        Ok(Self(EcKey(gen_ec_key())))
+        Ok(Self(EcKey::generate().await?))
     }
 
     fn public_key(&self) -> Result<EcPublicEncryptionKey, TombCryptError> {

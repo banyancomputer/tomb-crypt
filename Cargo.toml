@@ -8,13 +8,11 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# Common dependencies
-base64 = { version = "^0.21" }
 async-trait = "0.1.71"
+chrono = { version = "0.4.22" }
 serde = "1.0.183"
 jwt-simple = { version = "0.11.6" }
 rand = "0.8.5"
-chrono = { version = "0.4.22" }
 p384 = { version = "0.13.0", features = ["arithmetic", "alloc", "pkcs8", "pem"] }
 rand_core = "0.6.4"
 base64ct = "1.6.0"
@@ -22,30 +20,13 @@ sha1 = "0.10.6"
 hkdf = "0.12.3"
 sha2 = "0.10.8"
 aes-gcm = "0.10.3"
-sec1 = "0.7.3"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-openssl = { version = "^0.10", features = ["vendored"] }
-openssl-hkdf = { version = "^0.2" }
 tokio = { version = "^1", default-features = false, features = ["rt", "rt-multi-thread", "test-util", "tokio-macros", "macros"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 console_error_panic_hook = "^0.1"
-gloo = { version = "0.8.1", features = [ "utils", "console" ] }
-js-sys = "^0.3"
-pem = "^2"
-wasm-bindgen-futures = "^0.4"
-wasm-bindgen = "^0.2"
-web-sys = { version = "^0.3", features = [
-  "Crypto",
-  "CryptoKey",
-  "CryptoKeyPair",
-  "SubtleCrypto",
-  "EcKeyGenParams",
-  "EcdhKeyDeriveParams",
-  "HkdfParams"
-]}
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "^0.3"

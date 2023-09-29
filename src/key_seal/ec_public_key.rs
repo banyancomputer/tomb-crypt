@@ -8,7 +8,6 @@ use crate::key_seal::internal::{
 use crate::key_seal::TombCryptError;
 
 use p384::PublicKey as P384PublicKey;
-use sha1::Digest;
 
 #[derive(Clone, Debug)]
 pub struct EcPublicKey(pub(crate) P384PublicKey);
