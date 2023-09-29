@@ -28,6 +28,11 @@ tokio = { version = "^1", default-features = false, features = ["rt", "rt-multi-
 getrandom = { version = "0.2", features = ["js"] }
 console_error_panic_hook = "^0.1"
 
+[target.'cfg(target_arch = "wasm32")'.dependencies.chrono]
+version = "0.4"
+default-features = false
+features = ["wasmbind", "js-sys"]
+
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "^0.3"
 

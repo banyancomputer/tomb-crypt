@@ -92,14 +92,20 @@ impl Display for TombCryptError {
         use TombCryptErrorKind::*;
 
         let msg = match &self.kind {
+            PrivateKeyExportBytesFailed => "private key export bytes failed",
+            PrivateKeyImportBytesFailed => "private key import bytes failed",
+            PrivateKeyImportFailed(_) => "private key import failed",
             PrivateKeyExportFailed(_) => "private key export failed",
+            PublicKeyImportFailed(_) => "public key import failed",
             PublicKeyExportFailed(_) => "public key export failed",
+            HkdfExpandFailed(_) => "hkdf expand failed",
+            EncryptionFailed(_) => "encryption failed",
+            DecryptionFailed(_) => "decryption failed",
             JwtError(_) => "jwt error",
             JwtMissingClaims(_) => "missing jwt claims",
             JwtMissingHeaderField(_) => "missing jwt header field",
             InvalidBase64(_) => "invalid base64",
             InvalidUtf8(_) => "invalid utf8",
-            _ => "placeholder",
         };
 
         f.write_str(msg)
@@ -111,15 +117,10 @@ impl std::error::Error for TombCryptError {
         use TombCryptErrorKind::*;
 
         match &self.kind {
-            // BackgroundGenerationFailed(err) => Some(err),
-            // BadFormat(err) => Some(err),
-            // PrivateKeyImportFailed(err) => Some(err),
-            // // PublicKeyImportFailed(err) => Some(err),
-            // PrivateKeyExportFailed(err) => Some(err),
-            // PublicKeyExportFailed(err) => Some(err),
-            // EcError(err) => Some(err),
-            // JwtError(err) => err.source(),
-            // InvalidBase64(err) => Some(err),
+            PrivateKeyExportFailed(err) => Some(err),
+            PrivateKeyImportFailed(err) => Some(err),
+            PublicKeyExportFailed(err) => Some(err),
+            PublicKeyImportFailed(err) => Some(err),
             InvalidUtf8(err) => Some(err),
             _ => None,
         }
