@@ -33,12 +33,15 @@ impl PlainKey for SymmetricKey {
             &fingerprint(&ephemeral_secret.public_key()),
             &fingerprint(&recipient_key.0 .0),
         );
-        hkdf.expand(info.as_bytes(), &mut key).map_err(TombCryptError::hkdf_expand_failed)?;
+        hkdf.expand(info.as_bytes(), &mut key)
+            .map_err(TombCryptError::hkdf_expand_failed)?;
 
         let aes_key: &Key<Aes256Gcm> = &key.into();
         let nonce = Aes256Gcm::generate_nonce(&mut rng);
         let cipher = Aes256Gcm::new(aes_key);
-        let cipher_text = cipher.encrypt(&nonce, self.0.as_ref()).map_err(TombCryptError::encryption_failed)?;
+        let cipher_text = cipher
+            .encrypt(&nonce, self.0.as_ref())
+            .map_err(TombCryptError::encryption_failed)?;
         Ok(EncryptedSymmetricKey {
             data: cipher_text.as_slice().try_into().unwrap(),
             salt,

@@ -1,6 +1,9 @@
 use async_trait::async_trait;
 
-use crate::key_seal::common::{PrivateKey, ProtectedKey, PublicKey, AES_KEY_SIZE, ENCRYPTED_AES_KEY_SIZE, SALT_SIZE, NONCE_SIZE};
+use crate::key_seal::common::{
+    PrivateKey, ProtectedKey, PublicKey, AES_KEY_SIZE, ENCRYPTED_AES_KEY_SIZE, NONCE_SIZE,
+    SALT_SIZE,
+};
 use crate::key_seal::generate_info;
 use crate::key_seal::internal::fingerprint;
 use crate::key_seal::TombCryptError;

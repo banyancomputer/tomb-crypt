@@ -133,8 +133,7 @@ mod tests {
         assert_eq!(raw_key_bytes, reexported_key_bytes);
 
         let raw_public_key_bytes = public_key.export_bytes().await?;
-        let imported_public_key =
-            EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
+        let imported_public_key = EcPublicSignatureKey::import_bytes(&raw_public_key_bytes).await?;
         let reexported_public_key_bytes = imported_public_key.export_bytes().await?;
         assert_eq!(raw_public_key_bytes, reexported_public_key_bytes);
 
@@ -259,7 +258,6 @@ mod tests {
         use wasm_bindgen_test::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
-
         #[wasm_bindgen_test]
         async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
             test_pem_key_parse_and_use().await
