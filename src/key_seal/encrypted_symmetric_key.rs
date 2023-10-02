@@ -13,7 +13,7 @@ use aes_gcm::{aead::Aead, Aes256Gcm, Key, KeyInit};
 use base64ct::{Base64, Decoder, Encoding};
 use p384::elliptic_curve::ecdh::diffie_hellman;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct EncryptedSymmetricKey {
     pub(crate) salt: [u8; SALT_SIZE],
     pub(crate) nonce: [u8; NONCE_SIZE],
