@@ -11,7 +11,7 @@ use p384::elliptic_curve::ecdh::EphemeralSecret;
 #[derive(Debug)]
 pub struct SymmetricKey(pub(crate) [u8; AES_KEY_SIZE]);
 
-#[async_trait(?Send)]
+#[async_trait]
 impl PlainKey for SymmetricKey {
     type Error = TombCryptError;
     type ProtectedKey = EncryptedSymmetricKey;

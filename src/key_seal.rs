@@ -38,7 +38,6 @@ pub fn pretty_fingerprint(fingerprint_bytes: &[u8]) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-
     const PLAINTEXT_SYMMETRIC_KEY: &[u8; 32] = b"demo-key-do-not-reuse-sample-key";
 
     const TEST_PEM_KEY: &[u8] = &[
@@ -159,7 +158,7 @@ mod tests {
         let token = claims.encode_to(&key).await?;
         let _ = ApiToken::decode_from(&token, &public_key).await?;
         let metadata = ApiTokenMetadata::try_from(token)?;
-        let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
+        let key_id = pretty_fingerprint(public_key.fingerprint().await?.as_slice());
 
         // Check the metadata
         assert_eq!(metadata.alg(), "ES384");

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use async_trait::async_trait;
 
 use crate::key_seal::common::{PrivateKey, PublicKey, FINGERPRINT_SIZE};
@@ -12,7 +14,7 @@ use p384::SecretKey as P384SecretKey;
 #[derive(Clone, Debug)]
 pub struct EcKey(pub(crate) P384SecretKey);
 
-#[async_trait(?Send)]
+#[async_trait]
 impl PrivateKey for EcKey {
     type Error = TombCryptError;
     type PublicKey = EcPublicKey;
@@ -25,7 +27,7 @@ impl PrivateKey for EcKey {
         export_key_bytes(&self.0)
     }
 
-    async fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], TombCryptError> {
+    async fn fingerprint(&self) -> Result<Arc<[u8; FINGERPRINT_SIZE]>, TombCryptError> {
         self.public_key()?.fingerprint().await
     }
 

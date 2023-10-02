@@ -21,7 +21,7 @@ pub struct EncryptedSymmetricKey {
     pub(crate) public_key: Vec<u8>,
 }
 
-#[async_trait(?Send)]
+#[async_trait]
 impl ProtectedKey for EncryptedSymmetricKey {
     type Error = TombCryptError;
     type PlainKey = SymmetricKey;
