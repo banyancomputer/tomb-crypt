@@ -10,7 +10,8 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 async-trait = "0.1.71"
 serde = "1.0.183"
-jwt-simple = { version = "0.11.6" }
+jwt-simple = "0.11.6"
+coarsetime = "=0.1.23"
 rand = "0.8.5"
 p384 = { version = "0.13.0", features = ["arithmetic", "alloc", "pkcs8", "pem"] }
 rand_core = "0.6.4"
@@ -19,7 +20,7 @@ sha1 = "0.10.6"
 hkdf = "0.12.3"
 sha2 = "0.10.8"
 aes-gcm = "0.10.3"
-chrono = { version = "0.4.22" }
+chrono = "0.4.22"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 tokio = { version = "^1", default-features = false, features = ["rt", "rt-multi-thread", "test-util", "tokio-macros", "macros"] }
