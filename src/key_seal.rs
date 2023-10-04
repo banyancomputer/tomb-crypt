@@ -257,6 +257,7 @@ mod tests {
         use wasm_bindgen_test::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
+        
         #[wasm_bindgen_test]
         async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
             test_pem_key_parse_and_use().await
