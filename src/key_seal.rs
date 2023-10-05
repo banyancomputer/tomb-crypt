@@ -72,7 +72,7 @@ mod tests {
     const SEALED_KEY: &str = "FeVEBYkXSqi/7wNX4KevwA==.2fxA9mj2dCyc+ajM.AQ8y4XsMS6z/r513AOVVQzBVaUNFph//4nCJZVcp8bEi5AvL8iDcWDMMkNKDoJ7e.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEs8INCcNBaPG5yzuG6V7V9/NJJsXSu7iSUzHw2E4oOvVTokgWStSNThSVtPsvlfh4OBUbKrGdYp0WgKpSRKaIVkYL6fZUswKkiUq7iHiLGdXL2A3/Z+fZhlPUfAruAUVX";
 
     async fn test_encryption_end_to_end() -> Result<(), TombCryptError> {
-        use crate::key_seal::common::{PlainKey, PrivateKey, ProtectedKey};
+        use crate::key_seal::common::PrivateKey;
 
         let temporal_key = SymmetricKey::from(*PLAINTEXT_SYMMETRIC_KEY);
 
@@ -150,7 +150,7 @@ mod tests {
     }
 
     async fn test_api_token() -> Result<(), TombCryptError> {
-        use crate::key_seal::common::{ApiToken, ApiTokenMetadata, Jwt, PrivateKey, PublicKey};
+        use crate::key_seal::common::{ApiToken, ApiTokenMetadata, PrivateKey, PublicKey};
         let key = EcSignatureKey::generate().await?;
         let public_key = key.public_key()?;
 
@@ -176,7 +176,7 @@ mod tests {
     }
 
     async fn test_api_token_fail() -> Result<(), TombCryptError> {
-        use crate::key_seal::common::{ApiToken, Jwt, PrivateKey};
+        use crate::key_seal::common::{ApiToken, PrivateKey};
         let key = EcSignatureKey::generate().await?;
         let bad_key = EcSignatureKey::generate().await?;
         let bad_public_key = bad_key.public_key()?;
@@ -189,7 +189,7 @@ mod tests {
     }
 
     async fn test_pem_key_parse_and_use() -> Result<(), TombCryptError> {
-        use crate::key_seal::common::{PrivateKey, ProtectedKey};
+        use crate::key_seal::common::PrivateKey;
 
         let private_key = EcEncryptionKey::import(TEST_PEM_KEY).await?;
         let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
@@ -200,7 +200,7 @@ mod tests {
     }
 
     async fn test_der_key_parse_and_use() -> Result<(), TombCryptError> {
-        use crate::key_seal::common::{PrivateKey, ProtectedKey};
+        use crate::key_seal::common::PrivateKey;
 
         let private_key = EcEncryptionKey::import_bytes(TEST_DER_KEY).await?;
         let protected_key = EncryptedSymmetricKey::import(SEALED_KEY)?;
@@ -257,7 +257,7 @@ mod tests {
         use wasm_bindgen_test::*;
 
         wasm_bindgen_test_configure!(run_in_browser);
-        
+
         #[wasm_bindgen_test]
         async fn pem_key_parse_and_use() -> Result<(), TombCryptError> {
             test_pem_key_parse_and_use().await

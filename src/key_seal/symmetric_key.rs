@@ -1,6 +1,4 @@
-use async_trait::async_trait;
-
-use crate::key_seal::common::{PlainKey, AES_KEY_SIZE};
+use crate::key_seal::common::AES_KEY_SIZE;
 use crate::key_seal::internal::{export_public_key_bytes, fingerprint, generate_salt};
 use crate::key_seal::{generate_info, TombCryptError};
 use crate::key_seal::{EcPublicEncryptionKey, EncryptedSymmetricKey};
@@ -11,16 +9,11 @@ use p384::elliptic_curve::ecdh::EphemeralSecret;
 #[derive(Debug)]
 pub struct SymmetricKey(pub(crate) [u8; AES_KEY_SIZE]);
 
-#[async_trait]
-impl PlainKey for SymmetricKey {
-    type Error = TombCryptError;
-    type ProtectedKey = EncryptedSymmetricKey;
-    type PublicKey = EcPublicEncryptionKey;
-
-    async fn encrypt_for(
+impl SymmetricKey {
+    pub async fn encrypt_for(
         &self,
-        recipient_key: &Self::PublicKey,
-    ) -> Result<Self::ProtectedKey, TombCryptError> {
+        recipient_key: &EcPublicEncryptionKey,
+    ) -> Result<EncryptedSymmetricKey, TombCryptError> {
         let mut rng = rand::thread_rng();
         let ephemeral_secret = EphemeralSecret::random(&mut rng);
         let ephemeral_public_key = ephemeral_secret.public_key();

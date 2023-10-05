@@ -1,8 +1,5 @@
-use async_trait::async_trait;
-
 use crate::key_seal::common::{
-    PrivateKey, ProtectedKey, PublicKey, AES_KEY_SIZE, ENCRYPTED_AES_KEY_SIZE, NONCE_SIZE,
-    SALT_SIZE,
+    PrivateKey, PublicKey, AES_KEY_SIZE, ENCRYPTED_AES_KEY_SIZE, NONCE_SIZE, SALT_SIZE,
 };
 use crate::key_seal::generate_info;
 use crate::key_seal::internal::fingerprint;
@@ -21,13 +18,8 @@ pub struct EncryptedSymmetricKey {
     pub(crate) public_key: Vec<u8>,
 }
 
-#[async_trait]
-impl ProtectedKey for EncryptedSymmetricKey {
-    type Error = TombCryptError;
-    type PlainKey = SymmetricKey;
-    type PrivateKey = EcEncryptionKey;
-
-    async fn decrypt_with(
+impl EncryptedSymmetricKey {
+    pub async fn decrypt_with(
         &self,
         recipient_key: &EcEncryptionKey,
     ) -> Result<SymmetricKey, TombCryptError> {
@@ -55,7 +47,7 @@ impl ProtectedKey for EncryptedSymmetricKey {
         Ok(SymmetricKey(key))
     }
 
-    fn export(&self) -> String {
+    pub fn export(&self) -> String {
         [
             Base64::encode_string(&self.salt),
             Base64::encode_string(&self.nonce),
@@ -65,7 +57,7 @@ impl ProtectedKey for EncryptedSymmetricKey {
         .join(".")
     }
 
-    fn import(serialized: &str) -> Result<Self, TombCryptError> {
+    pub fn import(serialized: &str) -> Result<Self, TombCryptError> {
         let components: Vec<_> = serialized.split('.').collect();
 
         // let raw_salt = Base64::decode(components[0], Encoding::Standard)?;
