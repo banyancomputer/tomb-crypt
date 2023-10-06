@@ -10,8 +10,6 @@ mod encrypted_symmetric_key;
 mod error;
 mod internal;
 mod symmetric_key;
-#[cfg(target_arch = "wasm32")]
-pub mod wasm_helpers;
 
 pub use ec_encryption_key::EcEncryptionKey;
 pub use ec_public_encryption_key::EcPublicEncryptionKey;
@@ -20,8 +18,6 @@ pub use ec_signature_key::EcSignatureKey;
 pub use encrypted_symmetric_key::EncryptedSymmetricKey;
 pub use error::TombCryptError;
 pub use symmetric_key::SymmetricKey;
-#[cfg(target_arch = "wasm32")]
-pub use wasm_helpers::*;
 
 pub fn generate_info(encrypt_fingerprint_bytes: &[u8], decrypt_fingerprint_bytes: &[u8]) -> String {
     format!(
