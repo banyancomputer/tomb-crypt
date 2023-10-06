@@ -27,7 +27,20 @@ tokio = { version = "^1", default-features = false, features = ["rt", "rt-multi-
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "^0.2", features = ["js"] }
 console_error_panic_hook = "^0.1"
+web-sys = { version = "^0.3", features = [
+  "Crypto",
+  "CryptoKey",
+  "CryptoKeyPair",
+  "SubtleCrypto",
+  "EcKeyGenParams",
+  "EcdhKeyDeriveParams",
+  "HkdfParams"
+]}
+js-sys = "^0.3"
+gloo = { version = "0.8.1", features = [ "utils", "console" ] }
+pem = "^2"
+wasm-bindgen = "^0.2"
+wasm-bindgen-futures = "^0.4"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "^0.3"
-

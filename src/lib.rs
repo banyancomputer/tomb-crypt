@@ -8,4 +8,7 @@ pub mod prelude {
         EcEncryptionKey, EcPublicEncryptionKey, EcPublicSignatureKey, EcSignatureKey,
         EncryptedSymmetricKey, SymmetricKey, TombCryptError,
     };
+
+    #[cfg(target_arch = "wasm32")]
+    pub use crate::key_seal::wasm_helpers::*;
 }
