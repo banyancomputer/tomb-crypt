@@ -71,19 +71,6 @@ mod tests {
 
     const SEALED_KEY: &str = "gWpi+A3+mAm9IaeeI1Fq+g==./7hxZHDThkpnUr58.zLfay5f24Ou/gpXeTn/UTdTLO2vf/65U8hk70Xt6aWTO4gPKmfEdXeDwfIR+q1hX.MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEJR9Nd3p/UA8UPut9wRt+r7mx5Fv9wxopA+B5gm0lyFSzhJRZO6D4x57sJ68YiDvxSUfSCaOhWWhYTRJ6WxShf/g0bdLdkPrtxelSKHcUj3orr9rELWYUl1fxE6kOfSS4";
 
-    // async fn generate_constants() -> Result<(), TombCryptError> {
-    //     use crate::key_seal::common::PrivateKey;
-    //     let private_key = EcEncryptionKey::generate().await?;
-    //     println!("PEM: {:?}", private_key.export().await?);
-    //     println!("DER: {:?}", private_key.export_bytes().await?);
-
-    //     let public_key = private_key.public_key()?;
-    //     let symmetric_key: SymmetricKey = (*PLAINTEXT_SYMMETRIC_KEY).into();
-    //     let encrypted_symmetric_key = symmetric_key.encrypt_for(&public_key).await?;
-    //     println!("encrypted_symmetric: {}", encrypted_symmetric_key.export());
-    //     Ok(())
-    // }
-
     async fn test_encryption_end_to_end() -> Result<(), TombCryptError> {
         use crate::key_seal::common::PrivateKey;
 

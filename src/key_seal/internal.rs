@@ -28,19 +28,6 @@ pub fn fingerprint<'a>(public_key: impl Into<&'a P384PublicKey>) -> [u8; FINGERP
     hashed_bytes.into()
 }
 
-// pub fn fingerprint<'a>(public_key: impl Into<&'a P384PublicKey>) -> [u8; FINGERPRINT_SIZE] {
-//     let public_key = public_key.into();
-
-//     let bytes = public_key.to_sec1_bytes();
-//     let mut hasher = sha1::Sha1::new();
-//     hasher.update(&bytes);
-//     let bytes = hasher.finalize();
-//     let bytes = bytes.as_slice();
-//     let mut fingerprint = [0u8; FINGERPRINT_SIZE];
-//     fingerprint.copy_from_slice(&bytes[..FINGERPRINT_SIZE]);
-//     fingerprint
-// }
-
 pub fn gen_ec_key() -> P384SecretKey {
     let mut rng = rand::thread_rng();
     P384SecretKey::random(&mut rng)
