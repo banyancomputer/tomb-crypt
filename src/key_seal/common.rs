@@ -4,9 +4,16 @@ use async_trait::async_trait;
 use jwt_simple::prelude::*;
 use rand::{distributions::Alphanumeric, Rng};
 use std::error::Error;
+use std::sync::Arc;
 
 /// Number of bytes used for our AES keys (256-bit)
 pub const AES_KEY_SIZE: usize = 32;
+
+/// Size of encrypted AES key material
+pub const ENCRYPTED_AES_KEY_SIZE: usize = 48;
+
+/// How long Nonce values are
+pub const NONCE_SIZE: usize = 12;
 
 /// Length of a negotiated key exchange using our select EC curve (P384). It is assumed other
 /// algorithms with different key lengths aren't going to be used.
@@ -26,8 +33,8 @@ pub const JWT_LEEWAY: u64 = 30;
 
 /// A PrivateKey is an opinionated cryptographic type designed for encrypting and
 /// decrypting (wrapping) a symmetric AES key using an EC group key.
-#[async_trait(?Send)]
-pub trait PrivateKey: Sized {
+#[async_trait]
+pub trait PrivateKey: Sized + Send {
     /// The error type that will commonly be returned by all concrete implementations of the type.
     type Error: Error;
 
@@ -47,8 +54,9 @@ pub trait PrivateKey: Sized {
     /// Create a standards compliant SHA1 fingerprint of the associated public key encoded as a
     /// fixed length bytes string. This is usually presented to users by running it through the
     /// prettifier [`crate::key_seal::pretty_fingerprint()`].
-    async fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], Self::Error> {
-        self.public_key()?.fingerprint().await
+    async fn fingerprint(&self) -> Result<Arc<[u8; FINGERPRINT_SIZE]>, Self::Error> {
+        let public_key: Self::PublicKey = self.public_key()?;
+        public_key.fingerprint().await
     }
 
     /// Creates a secure new private key matching the security and use requirements for use as a EC
@@ -69,8 +77,8 @@ pub trait PrivateKey: Sized {
 /// The public portion of a [`PrivateKey`]. The public portion is important for tracking
 /// the identity of the keys and can be used to encrypt any plain key in a way the holder the
 /// private key can get access to.
-#[async_trait(?Send)]
-pub trait PublicKey: Sized {
+#[async_trait]
+pub trait PublicKey: Sized + Send + Sync {
     /// The error type that will commonly be returned by all concrete implementations of the type.
     type Error: Error;
 
@@ -85,63 +93,13 @@ pub trait PublicKey: Sized {
     /// Generates a SHA1 over the standardized compressed form representation of an EC key. This is
     /// usually presented to users by running it through the prettifier
     /// [`crate::key_seal::pretty_fingerprint()`].
-    async fn fingerprint(&self) -> Result<[u8; FINGERPRINT_SIZE], Self::Error>;
+    async fn fingerprint(&self) -> Result<Arc<[u8; FINGERPRINT_SIZE]>, Self::Error>;
 
     /// IMPORT A STANDARD PEM FORMATTED VERSION OF AN EC KEY.
     async fn import(pem_bytes: &[u8]) -> Result<Self, Self::Error>;
 
     /// Import a standard DER formatted EC key byte string
     async fn import_bytes(der_bytes: &[u8]) -> Result<Self, Self::Error>;
-}
-
-/// A wrapper around an unprotected 256-bit AES key. The raw key can act as a raw byte string for
-/// other implementation to use for encryption and decryption.
-#[async_trait(?Send)]
-pub trait PlainKey: AsRef<[u8]> + From<[u8; AES_KEY_SIZE]> {
-    /// The error type that will commonly be returned by all concrete implementations of the type.
-    type Error: Error;
-
-    /// The type the key will have once it has been protected with public key
-    type ProtectedKey: ProtectedKey;
-
-    /// This is the concrete implementation of the public portion of an EC key used to encrypt this
-    /// key for a specific individual.
-    type PublicKey: PublicKey;
-
-    /// Wrap the internal plaintext key with the provided public key. Only the holder of the
-    /// private portion will be able to reconstruct the original key.
-    async fn encrypt_for(
-        &self,
-        recipient_key: &Self::PublicKey,
-    ) -> Result<Self::ProtectedKey, Self::Error>;
-}
-
-/// A wrapped key and the associated deta required to decrypt the data into the original key when
-/// provided with an appropriate private key.
-#[async_trait(?Send)]
-pub trait ProtectedKey: Sized {
-    /// The error type that will commonly be returned by all concrete implementations of the type.
-    type Error: Error;
-
-    /// The decrypted key type that will be produced by providing the correct private key.
-    type PlainKey: PlainKey;
-
-    /// The concrete implementation of a private key that is capable of decrypting this protected
-    /// key.
-    type PrivateKey: PrivateKey;
-
-    /// Attempts to decrypt the protected key with the provided private key, if successful this
-    /// will produce a plaintext key.
-    async fn decrypt_with(
-        &self,
-        recipient_key: &Self::PrivateKey,
-    ) -> Result<Self::PlainKey, Self::Error>;
-
-    /// Export the protected key into a standardized format that can be exchanged freely.
-    fn export(&self) -> String;
-
-    /// Import protected key from the standardized format
-    fn import(serialized: &str) -> Result<Self, Self::Error>;
 }
 
 /// Defines standard pyaload interface for a JWT token
@@ -151,24 +109,6 @@ pub struct ApiToken(pub(crate) JWTClaims<NoCustomClaims>);
 /// Defines struct around a JWt bearer token. Can be used to extract metadata on a signed /encoded token
 #[derive(Debug, Clone)]
 pub struct ApiTokenMetadata(pub(crate) TokenMetadata);
-
-#[async_trait(?Send)]
-pub trait Jwt: Sized {
-    type Error: Error;
-    type PublicKey: PublicKey;
-    type PrivateKey: PrivateKey;
-
-    /// Decode a token from a string
-    /// # Arguments
-    /// * `token` - The token to decode
-    /// * `public_key` - The public key to use to verify the token
-    async fn decode_from(token: &str, public_key: &Self::PublicKey) -> Result<Self, Self::Error>;
-
-    /// Encode a token to a string
-    /// # Arguments
-    /// * `private_key` - The private key to use to sign the token
-    async fn encode_to(&self, private_key: &Self::PrivateKey) -> Result<String, Self::Error>;
-}
 
 impl ApiToken {
     /// Create a new token
@@ -348,19 +288,17 @@ impl TryFrom<String> for ApiTokenMetadata {
     }
 }
 
-#[async_trait(?Send)]
-impl Jwt for ApiToken {
-    type Error = TombCryptError;
-    type PublicKey = EcPublicSignatureKey;
-    type PrivateKey = EcSignatureKey;
-
+impl ApiToken {
     /// Decode a token from a string
     /// # Arguments
     /// * `token` - The token to decode
     /// * `public_key` - The public key to use to verify the token
-    async fn decode_from(token: &str, public_key: &Self::PublicKey) -> Result<Self, Self::Error> {
+    pub async fn decode_from(
+        token: &str,
+        public_key: &EcPublicSignatureKey,
+    ) -> Result<Self, TombCryptError> {
         let key_bytes = public_key.export_bytes().await?;
-        let key_id = pretty_fingerprint(&public_key.fingerprint().await?);
+        let key_id = pretty_fingerprint(public_key.fingerprint().await?.as_slice());
         let decoding_key = ES384PublicKey::from_der(&key_bytes)
             .map_err(TombCryptError::jwt_error)?
             .with_key_id(&key_id);
@@ -377,12 +315,14 @@ impl Jwt for ApiToken {
     /// * `private_key` - The private key to use to sign the token
     /// # Returns
     /// A string representation of the token
-    async fn encode_to(&self, signing_key: &Self::PrivateKey) -> Result<String, Self::Error> {
+    pub async fn encode_to(&self, signing_key: &EcSignatureKey) -> Result<String, TombCryptError> {
         let pem_bytes = signing_key.export().await?;
         let pem_string = std::str::from_utf8(&pem_bytes).map_err(TombCryptError::invalid_utf8)?;
         let encoding_key = ES384KeyPair::from_pem(pem_string)
             .map_err(TombCryptError::jwt_error)?
-            .with_key_id(&pretty_fingerprint(&signing_key.fingerprint().await?));
+            .with_key_id(&pretty_fingerprint(
+                signing_key.fingerprint().await?.as_slice(),
+            ));
         let claims = &self.0;
         let token = encoding_key
             .sign::<NoCustomClaims>(claims.clone())
