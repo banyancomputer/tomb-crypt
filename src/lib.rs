@@ -1,5 +1,6 @@
 mod key_seal;
 
+pub use crate::key_seal::hex_fingerprint;
 pub use crate::key_seal::pretty_fingerprint;
 
 pub mod prelude {
