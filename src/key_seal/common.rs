@@ -1,5 +1,5 @@
+use super::hex_fingerprint;
 use crate::prelude::*;
-use crate::pretty_fingerprint;
 use async_trait::async_trait;
 use jwt_simple::prelude::*;
 use rand::{distributions::Alphanumeric, Rng};
@@ -298,7 +298,7 @@ impl ApiToken {
         public_key: &EcPublicSignatureKey,
     ) -> Result<Self, TombCryptError> {
         let key_bytes = public_key.export_bytes().await?;
-        let key_id = pretty_fingerprint(public_key.fingerprint().await?.as_slice());
+        let key_id = hex_fingerprint(public_key.fingerprint().await?.as_slice());
         let decoding_key = ES384PublicKey::from_der(&key_bytes)
             .map_err(TombCryptError::jwt_error)?
             .with_key_id(&key_id);
@@ -320,7 +320,7 @@ impl ApiToken {
         let pem_string = std::str::from_utf8(&pem_bytes).map_err(TombCryptError::invalid_utf8)?;
         let encoding_key = ES384KeyPair::from_pem(pem_string)
             .map_err(TombCryptError::jwt_error)?
-            .with_key_id(&pretty_fingerprint(
+            .with_key_id(&hex_fingerprint(
                 signing_key.fingerprint().await?.as_slice(),
             ));
         let claims = &self.0;

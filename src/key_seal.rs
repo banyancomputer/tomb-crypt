@@ -35,6 +35,10 @@ pub fn pretty_fingerprint(fingerprint_bytes: &[u8]) -> String {
         .join(":")
 }
 
+pub fn hex_fingerprint(fingerprint_bytes: &[u8]) -> String {
+    pretty_fingerprint(fingerprint_bytes).replace(':', "")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
