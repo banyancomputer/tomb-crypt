@@ -1,11 +1,11 @@
 use base64ct::LineEnding;
+use blake3::Hasher;
 use p384::elliptic_curve::sec1::ToEncodedPoint;
 use p384::{
     pkcs8::{DecodePrivateKey, DecodePublicKey, EncodePrivateKey, EncodePublicKey},
     PublicKey as P384PublicKey, SecretKey as P384SecretKey,
 };
 use rand::RngCore;
-use sha1::Digest;
 
 use crate::key_seal::common::{FINGERPRINT_SIZE, SALT_SIZE};
 use crate::prelude::TombCryptError;
@@ -17,15 +17,17 @@ pub fn generate_salt() -> [u8; SALT_SIZE] {
     salt
 }
 
-/// SHA1 compressed point fingerprint function
+/// Blake3 compressed point fingerprint function
 pub fn fingerprint<'a>(public_key: impl Into<&'a P384PublicKey>) -> [u8; FINGERPRINT_SIZE] {
     let public_key = public_key.into();
     let compressed_point = public_key.as_ref().to_encoded_point(true);
-
-    let mut hasher = sha1::Sha1::new();
+    let compressed_point = compressed_point.as_bytes();
+    let mut hasher = Hasher::new();
     hasher.update(compressed_point);
-    let hashed_bytes = hasher.finalize();
-    hashed_bytes.into()
+    let mut output = [0u8; FINGERPRINT_SIZE];
+    let mut output_reader = hasher.finalize_xof();
+    output_reader.fill(&mut output);
+    output
 }
 
 pub fn gen_ec_key() -> P384SecretKey {
