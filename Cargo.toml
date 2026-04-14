@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 async-trait = "^0.1"
 serde = "^1.0"
 jwt-simple = "^0.11"
-rand = "^0.8"
+rand = "^0.9"
 p384 = { version = "^0.13", features = ["arithmetic", "alloc", "pkcs8", "pem"] }
 rand_core = "^0.6"
 base64ct = "^1.6"
